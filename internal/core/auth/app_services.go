@@ -1,12 +1,15 @@
 package auth
 
 import (
+	"clinic-vet-api/internal/core/customers"
+	"clinic-vet-api/internal/core/notifications"
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/shared"
 	"context"
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 type Message string
@@ -33,6 +36,10 @@ type SessionPayload struct {
 	User         users.User
 }
 
+type TwoFactorEnrollment struct {
+	BackupCodes []string
+}
+
 type AuthService interface {
 	Register(ctx context.Context, cmd RegisterCommand) (Message, error)
 	ActivateAccount(ctx context.Context, cmd ActivateAccountCommand) error
@@ -45,7 +52,7 @@ type AuthService interface {
 
 	VerifyTwoFactor(ctx context.Context, cmd VerifyTwoFactorCommand) (SessionPayload, error)
 
-	EnableTwoFactor(ctx context.Context, cmd EnableTwoFactorCommand) error
+	EnableTwoFactor(ctx context.Context, cmd EnableTwoFactorCommand) (TwoFactorEnrollment, error)
 	DisableTwoFactor(ctx context.Context, cmd DisableTwoFactorCommand) error
 
 	VerifyEmail(ctx context.Context, cmd VerifyEmailCommand) error
@@ -63,32 +70,46 @@ func NewAuthService(
 	userQuery users.QueryService,
 	sessionRepository SessionRepository,
 	passwordChecker PasswordChecker,
-	twoFactorProvider TwoFactorProvider,
+	twoFactorProvider TwoFactorProvider, notificationService notifications.NotificationService,
+	customerService customers.CustomerService,
 ) AuthService {
 	return &authService{
-		tokenService:      tokenService,
-		userCommand:       userCommand,
-		userQuery:         userQuery,
-		sessionRepository: sessionRepository,
-		passwordChecker:   passwordChecker,
-		twoFactorProvider: twoFactorProvider,
+		tokenService:        tokenService,
+		userCommand:         userCommand,
+		userQuery:           userQuery,
+		sessionRepository:   sessionRepository,
+		passwordChecker:     passwordChecker,
+		twoFactorProvider:   twoFactorProvider,
+		notificationService: notificationService,
+		customerService:     customerService,
 	}
 }
 
 type authService struct {
-	tokenService      TokenService
-	userCommand       users.CommandService
-	userQuery         users.QueryService
-	sessionRepository SessionRepository
-	passwordChecker   PasswordChecker
-	twoFactorProvider TwoFactorProvider
+	tokenService        TokenService
+	userCommand         users.CommandService
+	userQuery           users.QueryService
+	sessionRepository   SessionRepository
+	passwordChecker     PasswordChecker
+	twoFactorProvider   TwoFactorProvider
+	notificationService notifications.NotificationService
+	customerService     customers.CustomerService
 }
 
 func (s *authService) Register(ctx context.Context, cmd RegisterCommand) (Message, error) {
 	const op = "Register"
 
-	if !cmd.Role.IsValid() {
+	if cmd.Role != users.UserRoleCustomer {
 		return MessageError, InvalidRoleError(ctx, string(cmd.Role), op)
+	}
+
+	dateOfBirth, err := time.Parse("2006-01-02", cmd.DateOfBirth)
+	if err != nil {
+		return MessageError, fmt.Errorf("invalid date of birth: %w", err)
+	}
+	gender, err := shared.ParseGender(cmd.Gender)
+	if err != nil {
+		return MessageError, err
 	}
 
 	if err := shared.ValidatePasswordStrength(cmd.Password); err != nil {
@@ -127,18 +148,34 @@ func (s *authService) Register(ctx context.Context, cmd RegisterCommand) (Messag
 		Status:        status,
 	}
 
-	_, err = s.userCommand.CreateUser(ctx, createCmd)
+	user, err := s.userCommand.CreateUser(ctx, createCmd)
 	if err != nil {
 		return MessageError, err
 	}
 
-	if cmd.Role.IsEmployee() {
-		return EmployeeMessageSuccess, nil
+	userID := user.ID.Value()
+	if _, err := s.customerService.CreateCustomer(ctx, customers.CreateCustomerCommand{
+		FirstName:   cmd.FirstName,
+		LastName:    cmd.LastName,
+		Gender:      gender,
+		DateOfBirth: dateOfBirth,
+		PhotoURL:    cmd.PhotoURL,
+		IsActive:    false,
+		UserID:      &userID,
+	}); err != nil {
+		// Keep registration all-or-nothing when profile persistence fails.
+		_ = s.userCommand.DeleteUser(ctx, users.DeleteUserCommand{ID: user.ID, IsHardDelete: true})
+		return MessageError, err
 	}
-	if cmd.Role.IsCustomer() {
-		return CustomerMessageSuccess, nil
+
+	token, err := s.tokenService.CreateToken(ctx, map[string]any{ClaimUserID: user.ID.String(), ClaimEmail: user.Email.String()}, TokenTypeVerification)
+	if err != nil {
+		return MessageError, err
 	}
-	return AdminMessageSuccess, nil
+	if err := s.sendEmail(ctx, user, "Verify your account", "Use this verification code to activate your account: "+token.Code); err != nil {
+		return MessageError, err
+	}
+	return CustomerMessageSuccess, nil
 }
 
 func (s *authService) ActivateAccount(ctx context.Context, cmd ActivateAccountCommand) error {
@@ -177,7 +214,18 @@ func (s *authService) ActivateAccount(ctx context.Context, cmd ActivateAccountCo
 		ID:     cmd.UserID,
 		Status: users.UserStatusActive,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	if err := s.userCommand.SetEmailVerified(ctx, cmd.UserID); err != nil {
+		return err
+	}
+	if user.Role == users.UserRoleCustomer {
+		if err := s.customerService.ActivateCustomerByUserID(ctx, cmd.UserID.Value()); err != nil {
+			return err
+		}
+	}
+	return s.tokenService.RevokeToken(ctx, cmd.Code, TokenTypeVerification)
 }
 
 func (s *authService) Login(ctx context.Context, cmd LoginCommand) (SessionPayload, error) {
@@ -203,13 +251,11 @@ func (s *authService) Login(ctx context.Context, cmd LoginCommand) (SessionPaylo
 	}
 
 	if needs2FA {
-		if cmd.TwoFactorCode == nil || *cmd.TwoFactorCode == "" {
-			return SessionPayload{}, &RequiresTwoFactorError{UserID: user.ID}
+		challenge, err := s.tokenService.CreateToken(ctx, map[string]any{ClaimUserID: user.ID.String(), ClaimDeviceInfo: cmd.DeviceInfo, ClaimUserAgent: cmd.UserAgent, ClaimIPAddress: cmd.IPAddress}, TokenTypeTwoFactorChallenge)
+		if err != nil {
+			return SessionPayload{}, err
 		}
-		valid, err := s.twoFactorProvider.VerifyCode(ctx, user.ID, *cmd.TwoFactorCode)
-		if err != nil || !valid {
-			return SessionPayload{}, TwoFactorInvalidCodeError(ctx, op)
-		}
+		return SessionPayload{}, &RequiresTwoFactorError{ChallengeToken: challenge.Code}
 	}
 
 	return s.createSession(ctx, user, cmd.DeviceInfo, cmd.UserAgent, cmd.IPAddress)
@@ -272,8 +318,16 @@ func (s *authService) RefreshToken(ctx context.Context, cmd RefreshTokenCommand)
 	if err != nil {
 		return SessionPayload{}, err
 	}
+	if err := s.tokenService.SaveToken(ctx, refreshToken); err != nil {
+		return SessionPayload{}, err
+	}
 
-	_ = s.tokenService.RevokeToken(ctx, cmd.RefreshToken, TokenTypeRefreshToken)
+	if err := s.tokenService.RevokeToken(ctx, cmd.RefreshToken, TokenTypeRefreshToken); err != nil {
+		return SessionPayload{}, err
+	}
+	if err := s.sessionRepository.DeleteUserSession(ctx, userID.Value(), cmd.RefreshToken); err != nil {
+		return SessionPayload{}, err
+	}
 
 	session := JwtSession{
 		UserID:       uidStr,
@@ -299,20 +353,25 @@ func (s *authService) Logout(ctx context.Context, cmd LogoutCommand) error {
 	const op = "Logout"
 
 	if cmd.RefreshToken == "" {
-		return nil
+		return RefreshTokenRequiredError(ctx, op)
 	}
 
 	session, err := s.sessionRepository.GetByRefreshToken(ctx, cmd.RefreshToken)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	userID, err := parseUserID(session.UserID)
 	if err != nil {
-		return nil
+		return err
+	}
+	if userID.Value() != cmd.UserID.Value() {
+		return UnauthorizedError(ctx, op, "refresh token does not belong to the authenticated user")
 	}
 
-	_ = s.tokenService.RevokeToken(ctx, cmd.RefreshToken, TokenTypeRefreshToken)
+	if err := s.tokenService.RevokeToken(ctx, cmd.RefreshToken, TokenTypeRefreshToken); err != nil {
+		return err
+	}
 	return s.sessionRepository.DeleteUserSession(ctx, userID.Value(), cmd.RefreshToken)
 }
 
@@ -330,7 +389,19 @@ func (s *authService) LogoutAll(ctx context.Context, cmd LogoutAllCommand) error
 func (s *authService) VerifyTwoFactor(ctx context.Context, cmd VerifyTwoFactorCommand) (SessionPayload, error) {
 	const op = "VerifyTwoFactor"
 
-	user, err := s.userQuery.GetByID(ctx, cmd.UserID)
+	ok, err := s.tokenService.VerifyToken(ctx, cmd.ChallengeToken, TokenTypeTwoFactorChallenge)
+	if err != nil || !ok {
+		return SessionPayload{}, TwoFactorInvalidCodeError(ctx, op)
+	}
+	claims, err := s.tokenService.GetTokenClaims(ctx, cmd.ChallengeToken, TokenTypeTwoFactorChallenge)
+	if err != nil {
+		return SessionPayload{}, TwoFactorInvalidCodeError(ctx, op)
+	}
+	uid, err := parseUserID(claimString(claims, ClaimUserID))
+	if err != nil {
+		return SessionPayload{}, TwoFactorInvalidCodeError(ctx, op)
+	}
+	user, err := s.userQuery.GetByID(ctx, uid)
 	if err != nil {
 		return SessionPayload{}, InvalidCredentialsError(ctx, op)
 	}
@@ -339,32 +410,44 @@ func (s *authService) VerifyTwoFactor(ctx context.Context, cmd VerifyTwoFactorCo
 		return SessionPayload{}, TwoFactorNotEnabledError(ctx, op)
 	}
 
-	valid, err := s.twoFactorProvider.VerifyCode(ctx, cmd.UserID, cmd.TwoFactorCode)
+	valid, err := s.twoFactorProvider.VerifyCode(ctx, uid, cmd.TwoFactorCode)
 	if err != nil || !valid {
 		return SessionPayload{}, TwoFactorInvalidCodeError(ctx, op)
 	}
+	if _, err := s.userCommand.ConsumeBackupCode(ctx, uid, cmd.TwoFactorCode); err != nil {
+		return SessionPayload{}, err
+	}
 
-	return s.createSession(ctx, user, "", "", "")
+	if err := s.tokenService.RevokeToken(ctx, cmd.ChallengeToken, TokenTypeTwoFactorChallenge); err != nil {
+		return SessionPayload{}, err
+	}
+	return s.createSession(ctx, user, claimString(claims, ClaimDeviceInfo), claimString(claims, ClaimUserAgent), claimString(claims, ClaimIPAddress))
 }
 
-func (s *authService) EnableTwoFactor(ctx context.Context, cmd EnableTwoFactorCommand) error {
+func (s *authService) EnableTwoFactor(ctx context.Context, cmd EnableTwoFactorCommand) (TwoFactorEnrollment, error) {
 	const op = "EnableTwoFactor"
 
 	user, err := s.userQuery.GetByID(ctx, cmd.UserID)
 	if err != nil {
-		return UserNotFoundError(ctx, cmd.UserID, op)
+		return TwoFactorEnrollment{}, UserNotFoundError(ctx, cmd.UserID, op)
 	}
 
 	if user.TwoFactorAuth.IsEnabled {
-		return TwoFactorAlreadyEnabledError(ctx, op)
+		return TwoFactorEnrollment{}, TwoFactorAlreadyEnabledError(ctx, op)
 	}
 
-	_, _, err = s.twoFactorProvider.GenerateSecret(ctx, cmd.UserID, cmd.Method)
+	secret, backupCodes, err := s.twoFactorProvider.GenerateSecret(ctx, cmd.UserID, cmd.Method)
 	if err != nil {
-		return err
+		return TwoFactorEnrollment{}, err
 	}
-
-	return nil
+	hashes, err := s.twoFactorProvider.HashBackupCodes(backupCodes)
+	if err != nil {
+		return TwoFactorEnrollment{}, err
+	}
+	if err := s.userCommand.EnableTwoFactorAuth(ctx, cmd.UserID, cmd.Method, secret, hashes); err != nil {
+		return TwoFactorEnrollment{}, err
+	}
+	return TwoFactorEnrollment{BackupCodes: backupCodes}, nil
 }
 
 func (s *authService) DisableTwoFactor(ctx context.Context, cmd DisableTwoFactorCommand) error {
@@ -379,22 +462,39 @@ func (s *authService) DisableTwoFactor(ctx context.Context, cmd DisableTwoFactor
 		return TwoFactorNotEnabledError(ctx, op)
 	}
 
-	return s.twoFactorProvider.Disable(ctx, cmd.UserID)
+	if err := s.twoFactorProvider.Disable(ctx, cmd.UserID); err != nil {
+		return err
+	}
+	return s.userCommand.DisableTwoFactorAuth(ctx, cmd.UserID)
 }
 
 func (s *authService) VerifyEmail(ctx context.Context, cmd VerifyEmailCommand) error {
-	_ = cmd
-	return nil
+	const op = "VerifyEmail"
+	email, err := users.NewEmail(cmd.Email)
+	if err != nil {
+		return InvalidVerificationCodeError(ctx, op)
+	}
+	user, err := s.userQuery.GetByEmail(ctx, email)
+	if err != nil {
+		return InvalidVerificationCodeError(ctx, op)
+	}
+	return s.ActivateAccount(ctx, ActivateAccountCommand{Code: cmd.Code, UserID: user.ID})
 }
 
 func (s *authService) RequestResetPassword(ctx context.Context, cmd RequestResetPasswordCommand) error {
-	_, err := s.userQuery.GetByEmail(ctx, users.NewEmailNoErr(cmd.Email))
+	email, err := users.NewEmail(cmd.Email)
 	if err != nil {
 		return nil
 	}
-
-	// Token creation and email sending are infrastructure concerns; interface can be added later.
-	return nil
+	user, err := s.userQuery.GetByEmail(ctx, email)
+	if err != nil {
+		return nil
+	}
+	token, err := s.tokenService.CreateToken(ctx, map[string]any{ClaimUserID: user.ID.String(), ClaimEmail: user.Email.String()}, TokenTypePasswordReset)
+	if err != nil {
+		return err
+	}
+	return s.sendEmail(ctx, user, "Reset your password", "Use this password reset code: "+token.Code)
 }
 
 func (s *authService) ResetPassword(ctx context.Context, cmd ResetPasswordCommand) error {
@@ -424,10 +524,20 @@ func (s *authService) ResetPassword(ctx context.Context, cmd ResetPasswordComman
 		return err
 	}
 
-	return s.userCommand.ResetPasswordByCode(ctx, users.ResetPasswordByCodeCommand{
+	user, err := s.userQuery.GetByID(ctx, userID)
+	if err != nil || user.Email.String() != cmd.Email {
+		return InvalidVerificationCodeError(ctx, op)
+	}
+	if err := s.userCommand.ResetPasswordByCode(ctx, users.ResetPasswordByCodeCommand{
 		ID:          userID,
 		NewPassword: cmd.Password,
-	})
+	}); err != nil {
+		return err
+	}
+	if err := s.tokenService.RevokeToken(ctx, cmd.Code, TokenTypePasswordReset); err != nil {
+		return err
+	}
+	return s.sessionRepository.DeleteAllUserSessions(ctx, userID.Value())
 }
 
 func (s *authService) UpdatePassword(ctx context.Context, cmd UpdatePasswordCommand) error {
@@ -461,11 +571,29 @@ func (s *authService) DeleteAccount(ctx context.Context, userID shared.UserID) e
 		return UserNotFoundError(ctx, userID, op)
 	}
 
-	_ = s.sessionRepository.DeleteAllUserSessions(ctx, userID.Value())
+	if err := s.sessionRepository.DeleteAllUserSessions(ctx, userID.Value()); err != nil {
+		return err
+	}
 	return s.userCommand.DeleteUser(ctx, users.DeleteUserCommand{
 		ID:           userID,
 		IsHardDelete: false,
 	})
+}
+
+func (s *authService) sendEmail(ctx context.Context, user users.User, subject, message string) error {
+	if s.notificationService == nil {
+		return errors.New("notification service is required")
+	}
+	nType := notifications.NotificationTypeVerificationToken
+	if subject == "Reset your password" {
+		nType = notifications.NotificationTypePasswordReset
+	}
+	return s.notificationService.Send(ctx, &notifications.Notification{UserID: user.ID.String(), UserEmail: user.Email.String(), Subject: subject, Message: message, NType: nType, Channel: notifications.NotificationChannelEmail})
+}
+
+func claimString(claims map[string]any, key string) string {
+	value, _ := claims[key].(string)
+	return value
 }
 
 func (s *authService) registerCustomer(ctx context.Context, cmd RegisterCommand) (Message, error) {

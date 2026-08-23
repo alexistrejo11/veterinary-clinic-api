@@ -119,6 +119,13 @@ func (s *PetHandler) restorePetInternal(ctx *gin.Context, petID pets.PetID) (any
 // Manager level handlers
 // ------------------------------------------------------------
 
+// @Summary Get pet by ID
+// @Description Requires admin or receptionist role.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Success 200 {object} http.APIResponse{data=dtos.PetResponse}
+// @Router /pets/{id} [get]
 func (s *PetHandler) GetPetByID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		petID, err := parsePetIDFromParam(ctx)
@@ -130,6 +137,15 @@ func (s *PetHandler) GetPetByID(c *gin.Context) {
 	http.HandleGetRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary List customer pets
+// @Description Requires admin or receptionist role.
+// @Tags pets
+// @Security BearerAuth
+// @Param customer_id path int true "Customer ID"
+// @Param page_number query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} http.APIResponse{data=[]dtos.PetResponse}
+// @Router /pets/customers/{customer_id} [get]
 func (s *PetHandler) GetPetsByCustomerID(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		var pageParams page.PaginationRequest
@@ -149,6 +165,15 @@ func (s *PetHandler) GetPetsByCustomerID(c *gin.Context) {
 	})(c)
 }
 
+// @Summary Create customer pet
+// @Description Requires admin or receptionist role.
+// @Tags pets
+// @Security BearerAuth
+// @Param customer_id path int true "Customer ID"
+// @Param is_active query bool false "Whether the pet is active" default(true)
+// @Param body body dtos.PetCreateRequest true "Pet"
+// @Success 201 {object} http.APIResponse
+// @Router /pets/customers/{customer_id} [post]
 func (s *PetHandler) CreatePet(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.PetCreateRequest) (any, error) {
 		isActive := true
@@ -164,6 +189,14 @@ func (s *PetHandler) CreatePet(c *gin.Context) {
 	http.HandleCreateRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary Update pet
+// @Description Requires admin or receptionist role.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Param body body dtos.PetUpdateRequest true "Pet"
+// @Success 200 {object} http.APIResponse
+// @Router /pets/{id} [put]
 func (s *PetHandler) UpdatePet(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.PetUpdateRequest) (any, error) {
 		petID, err := parsePetIDFromParam(ctx)
@@ -176,6 +209,14 @@ func (s *PetHandler) UpdatePet(c *gin.Context) {
 	http.HandleUpdateRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary Delete pet
+// @Description Requires admin or receptionist role. Set hard to permanently delete.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Param hard query bool false "Permanently delete"
+// @Success 200 {object} http.APIResponse
+// @Router /pets/{id} [delete]
 func (s *PetHandler) DeletePet(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		petID, err := parsePetIDFromParam(ctx)
@@ -188,6 +229,13 @@ func (s *PetHandler) DeletePet(c *gin.Context) {
 	http.HandleDeleteRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary Restore pet
+// @Description Requires admin or receptionist role.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Success 200 {object} http.APIResponse
+// @Router /pets/{id}/restore [post]
 func (s *PetHandler) RestorePet(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		petID, err := parsePetIDFromParam(ctx)
@@ -201,6 +249,14 @@ func (s *PetHandler) RestorePet(c *gin.Context) {
 	})(c)
 }
 
+// @Summary Search pets
+// @Description Requires admin or receptionist role.
+// @Tags pets
+// @Security BearerAuth
+// @Param page_number query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} http.APIResponse{data=[]dtos.PetResponse}
+// @Router /pets [get]
 func (s *PetHandler) SearchPets(c *gin.Context) {
 	var requestBodyData dtos.PetSearchRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
@@ -232,6 +288,13 @@ func (s *PetHandler) getMyCustomerID(ctx *gin.Context) (uint, error) {
 	return CustomerIDFromContext(ctx, s.customerIDResolver)
 }
 
+// @Summary Get my pet
+// @Description Requires customer role.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Success 200 {object} http.APIResponse{data=dtos.PetResponse}
+// @Router /me/pets/{id} [get]
 func (s *PetHandler) GetMyPet(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		customerID, err := s.getMyCustomerID(ctx)
@@ -247,6 +310,14 @@ func (s *PetHandler) GetMyPet(c *gin.Context) {
 	http.HandleGetRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary List my pets
+// @Description Requires customer role.
+// @Tags pets
+// @Security BearerAuth
+// @Param page_number query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} http.APIResponse{data=[]dtos.PetResponse}
+// @Router /me/pets [get]
 func (s *PetHandler) GetMyPets(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		var pageParams page.PaginationRequest
@@ -267,6 +338,13 @@ func (s *PetHandler) GetMyPets(c *gin.Context) {
 	})(c)
 }
 
+// @Summary Create my pet
+// @Description Requires customer role.
+// @Tags pets
+// @Security BearerAuth
+// @Param body body dtos.PetCreateRequest true "Pet"
+// @Success 201 {object} http.APIResponse
+// @Router /me/pets [post]
 func (s *PetHandler) CreatePetForMe(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.PetCreateRequest) (any, error) {
 		getCustomerID := func(c *gin.Context) (uint, error) { return s.getMyCustomerID(c) }
@@ -275,6 +353,14 @@ func (s *PetHandler) CreatePetForMe(c *gin.Context) {
 	http.HandleCreateRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary Update my pet
+// @Description Requires customer role.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Param body body dtos.PetUpdateRequest true "Pet"
+// @Success 200 {object} http.APIResponse
+// @Router /me/pets/{id} [put]
 func (s *PetHandler) UpdateMyPet(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.PetUpdateRequest) (any, error) {
 		customerID, err := s.getMyCustomerID(ctx)
@@ -290,6 +376,13 @@ func (s *PetHandler) UpdateMyPet(c *gin.Context) {
 	http.HandleUpdateRequest(s.validator, "Pet", logic)(c)
 }
 
+// @Summary Delete my pet
+// @Description Requires customer role.
+// @Tags pets
+// @Security BearerAuth
+// @Param id path int true "Pet ID"
+// @Success 200 {object} http.APIResponse
+// @Router /me/pets/{id} [delete]
 func (s *PetHandler) DeleteMyPet(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		customerID, err := s.getMyCustomerID(ctx)

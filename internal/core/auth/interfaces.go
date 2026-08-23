@@ -22,6 +22,7 @@ type TwoFactorProvider interface {
 	// GenerateSecret generates a new 2FA secret and backup codes for enabling 2FA.
 	// Returns secret (e.g. TOTP secret), backup codes, and optional QR/setup URI.
 	GenerateSecret(ctx context.Context, userID shared.UserID, method string) (secret string, backupCodes []string, err error)
+	HashBackupCodes(codes []string) ([]string, error)
 
 	// Disable clears 2FA state for the user (e.g. invalidate backup codes server-side if stored).
 	Disable(ctx context.Context, userID shared.UserID) error

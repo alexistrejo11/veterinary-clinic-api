@@ -1,18 +1,20 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"time"
 )
 
 type AuthConfig struct {
-	JWTSecret          string        `json:"jwt_secret"`
-	JWTExpirationTime  time.Duration `json:"jwt_expiration_time"`
-	RefreshTokenExpiry time.Duration `json:"refresh_token_expiry"`
-	PasswordMinLength  int           `json:"password_min_length"`
-	MaxLoginAttempts   int           `json:"max_login_attempts"`
-	LockoutDuration    time.Duration `json:"lockout_duration"`
+	JWTSecret              string        `json:"jwt_secret"`
+	JWTExpirationTime      time.Duration `json:"jwt_expiration_time"`
+	RefreshTokenExpiry     time.Duration `json:"refresh_token_expiry"`
+	PasswordMinLength      int           `json:"password_min_length"`
+	MaxLoginAttempts       int           `json:"max_login_attempts"`
+	LockoutDuration        time.Duration `json:"lockout_duration"`
+	TwoFactorEncryptionKey []byte        `json:"-"`
 }
 
 func loadAuthConfig(config *AuthConfig) error {
@@ -21,7 +23,12 @@ func loadAuthConfig(config *AuthConfig) error {
 		return fmt.Errorf("JWT_SECRET is required")
 	}
 
-	var err error
+	twoFactorKey, err := base64.StdEncoding.DecodeString(os.Getenv("TWO_FACTOR_ENCRYPTION_KEY"))
+	if err != nil || len(twoFactorKey) != 32 {
+		return fmt.Errorf("TWO_FACTOR_ENCRYPTION_KEY must be base64-encoded 32 bytes")
+	}
+	config.TwoFactorEncryptionKey = twoFactorKey
+
 	config.JWTExpirationTime, err = parseDuration("JWT_EXPIRATION_TIME", "24h")
 	if err != nil {
 		return fmt.Errorf("invalid JWT_EXPIRATION_TIME: %w", err)

@@ -18,7 +18,9 @@ type EmployeeRepository interface {
 	Save(ctx context.Context, employee *Employee) error
 	SoftDelete(ctx context.Context, id EmployeeID) error
 	HardDelete(ctx context.Context, id EmployeeID) error
+	RestoreByID(ctx context.Context, id EmployeeID) error
 
 	CountBySpeciality(ctx context.Context, speciality VetSpecialty) (int64, error)
+	CountByActive(ctx context.Context, active *bool) (int64, error)
 	CountActive(ctx context.Context) (int64, error)
 }

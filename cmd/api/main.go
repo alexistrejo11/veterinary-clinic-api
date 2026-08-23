@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os"
@@ -196,7 +195,7 @@ func setupCORS(settings *config.AppSettings) gin.HandlerFunc {
 // setupModules initializes and registers all application modules
 func setupModules(router *gin.Engine, settings *config.AppSettings, queries *sqlc.Queries, validator *validator.Validate) error {
 	// Bootstrap other API modules
-	if err := config.BootstrapAPIModules(router, queries, validator, config.RedisClient, settings.Auth.JWTSecret); err != nil {
+	if err := config.BootstrapAPIModules(router, queries, validator, config.RedisClient, settings); err != nil {
 		return fmt.Errorf("failed to bootstrap API modules: %w", err)
 	}
 
@@ -204,7 +203,7 @@ func setupModules(router *gin.Engine, settings *config.AppSettings, queries *sql
 }
 
 func createHTTPServer(handler http.Handler, settings *config.AppSettings) *http.Server {
-	server := &http.Server{
+	return &http.Server{
 		Addr:           settings.GetServerAddr(),
 		Handler:        handler,
 		ReadTimeout:    settings.Server.ReadTimeout,
@@ -212,47 +211,10 @@ func createHTTPServer(handler http.Handler, settings *config.AppSettings) *http.
 		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 20, // 1 MB
 	}
-
-	// Add TLS configuration for HTTPS if enabled
-	if settings.Server.EnableHTTPS {
-		server.TLSConfig = &tls.Config{
-			MinVersion:               tls.VersionTLS12,
-			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-			PreferServerCipherSuites: true,
-			CipherSuites: []uint16{
-				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-			},
-		}
-	}
-
-	return server
 }
 
-// startServer starts the HTTP or HTTPS server based on configuration
 func (app *Application) startServer() error {
-	log.App.Info(fmt.Sprintf("Starting server on %s", app.Settings.GetServerAddr()))
-
-	// Check if HTTPS is enabled
-	if app.Settings.Server.EnableHTTPS {
-		certFile := app.Settings.Server.CertFile
-		keyFile := app.Settings.Server.KeyFile
-
-		// Validate certificate files exist
-		if certFile == "" || keyFile == "" {
-			return fmt.Errorf("HTTPS enabled but certificate files not specified")
-		}
-
-		log.App.Info("Starting HTTPS server...")
-		log.App.Info(fmt.Sprintf("Using certificate: %s", certFile))
-
-		return app.Server.ListenAndServeTLS(certFile, keyFile)
-	}
-
-	// Start HTTP server
-	log.App.Info("Starting HTTP server...")
+	log.App.Info(fmt.Sprintf("Starting HTTP server on %s", app.Settings.GetServerAddr()))
 	return app.Server.ListenAndServe()
 }
 

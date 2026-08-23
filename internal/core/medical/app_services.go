@@ -60,6 +60,7 @@ type VaccinationService interface {
 
 	// GetVaccinationsBySession returns all vaccination records for a session.
 	GetVaccinationsBySession(ctx context.Context, sessionID SessionID) ([]SessionVaccination, error)
+	GetVaccinationByID(ctx context.Context, id VaccinationID) (SessionVaccination, error)
 
 	// GetVaccinationHistory returns the full vaccination history for a pet,
 	// optionally filtered and paginated.
@@ -67,7 +68,7 @@ type VaccinationService interface {
 
 	// GetPetVaccinationSummary returns the pet's vaccination status for each
 	// known vaccine, highlighting which doses are upcoming or overdue.
-	GetPetVaccinationSummary(ctx context.Context, petID uint) (PetVaccinationSummary, error)
+	GetPetVaccinationSummary(ctx context.Context, petID uint, employeeIDs []uint) (PetVaccinationSummary, error)
 }
 
 // ─── SurgeryService ───────────────────────────────────────────────────────────
@@ -78,6 +79,7 @@ type SurgeryService interface {
 	UpdateSurgery(ctx context.Context, cmd UpdateSurgeryCommand) (SessionSurgery, error)
 	RemoveSurgery(ctx context.Context, id SurgeryID) error
 	GetSurgeriesBySession(ctx context.Context, sessionID SessionID) ([]SessionSurgery, error)
+	GetSurgeryByID(ctx context.Context, id SurgeryID) (SessionSurgery, error)
 }
 
 // ─── PrescriptionService ──────────────────────────────────────────────────────
@@ -88,10 +90,11 @@ type PrescriptionService interface {
 	UpdatePrescription(ctx context.Context, cmd UpdatePrescriptionCommand) (SessionPrescription, error)
 	RemovePrescription(ctx context.Context, id PrescriptionID) error
 	GetPrescriptionsBySession(ctx context.Context, sessionID SessionID) ([]SessionPrescription, error)
+	GetPrescriptionByID(ctx context.Context, id PrescriptionID) (SessionPrescription, error)
 
 	// GetActivePrescriptionsByPet returns current (not-yet-ended) prescriptions
 	// across all sessions for a pet.
-	GetActivePrescriptionsByPet(ctx context.Context, petID uint, p page.Pagination) (page.Page[SessionPrescription], error)
+	GetActivePrescriptionsByPet(ctx context.Context, petID uint, employeeIDs []uint, p page.Pagination) (page.Page[SessionPrescription], error)
 }
 
 // ─── AttachmentService ────────────────────────────────────────────────────────
@@ -101,6 +104,7 @@ type AttachmentService interface {
 	AddAttachment(ctx context.Context, cmd AddAttachmentCommand) (SessionAttachment, error)
 	RemoveAttachment(ctx context.Context, id AttachmentID) error
 	GetAttachmentsBySession(ctx context.Context, sessionID SessionID) ([]SessionAttachment, error)
+	GetAttachmentByID(ctx context.Context, id AttachmentID) (SessionAttachment, error)
 }
 
 // ─── SessionServiceManager ────────────────────────────────────────────────────
@@ -110,6 +114,7 @@ type SessionServiceManager interface {
 	AddService(ctx context.Context, cmd AddSessionServiceCommand) (SessionService, error)
 	RemoveService(ctx context.Context, id SessionServiceID) error
 	GetServicesBySession(ctx context.Context, sessionID SessionID) ([]SessionService, error)
+	GetSessionServiceByID(ctx context.Context, id SessionServiceID) (SessionService, error)
 }
 
 // ─── Catalog services ─────────────────────────────────────────────────────────

@@ -14,6 +14,200 @@ definitions:
     - code
     - user_id
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddAttachmentRequest:
+    description: Session ID, file_type, file_url, optional description, uploaded_by.
+    properties:
+      description:
+        type: string
+      file_type:
+        type: string
+      file_url:
+        type: string
+      session_id:
+        type: integer
+      uploaded_by:
+        type: integer
+    required:
+    - file_type
+    - file_url
+    - session_id
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddPrescriptionRequest:
+    description: Session ID, medication ID, dosage, frequency, start_date, optional
+      duration_days, route, instructions.
+    properties:
+      dosage:
+        type: string
+      duration_days:
+        type: integer
+      frequency:
+        type: string
+      instructions:
+        type: string
+      medication_id:
+        type: integer
+      route:
+        type: string
+      session_id:
+        type: integer
+      start_date:
+        description: RFC3339
+        type: string
+    required:
+    - dosage
+    - frequency
+    - medication_id
+    - session_id
+    - start_date
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSessionServiceRequest:
+    description: Session ID, service catalog ID, quantity, optional price_applied,
+      notes.
+    properties:
+      notes:
+        type: string
+      price_applied:
+        type: number
+      quantity:
+        type: number
+      service_catalog_id:
+        type: integer
+      session_id:
+        type: integer
+    required:
+    - quantity
+    - service_catalog_id
+    - session_id
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSurgeryRequest:
+    description: Session ID, procedure name, outcome (required), optional anesthesia,
+      pre/intra/post-op notes, duration, surgeon_id.
+    properties:
+      anesthesia_agent:
+        type: string
+      anesthesia_type:
+        type: string
+      duration_minutes:
+        type: integer
+      intra_op_notes:
+        type: string
+      outcome:
+        type: string
+      post_op_notes:
+        type: string
+      pre_op_notes:
+        type: string
+      procedure_name:
+        type: string
+      session_id:
+        type: integer
+      surgeon_id:
+        type: integer
+    required:
+    - outcome
+    - procedure_name
+    - session_id
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddVaccinationRequest:
+    description: Session ID, vaccine catalog ID, dose number, optional batch, expiration,
+      site, next dose date, reaction notes, administered_by.
+    properties:
+      administered_by:
+        type: integer
+      batch_number:
+        type: string
+      dose_number:
+        minimum: 1
+        type: integer
+      expiration_date:
+        type: string
+      next_dose_date:
+        type: string
+      reaction_notes:
+        type: string
+      session_id:
+        type: integer
+      site_of_injection:
+        type: string
+      vaccine_catalog_id:
+        type: integer
+    required:
+    - dose_number
+    - session_id
+    - vaccine_catalog_id
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressCreateRequest:
+    description: Street, city, state, zip, country, building type/numbers, and whether
+      it is the default address.
+    properties:
+      building_inner_number:
+        type: string
+      building_outer_number:
+        type: string
+      building_type:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      is_default:
+        type: boolean
+      state:
+        type: string
+      street:
+        type: string
+      zip_code:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse:
+    description: 'Address entity: id, street, city, state, zip, country, building
+      details, is_default.'
+    properties:
+      building_inner_number:
+        type: string
+      building_outer_number:
+        type: string
+      building_type:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      state:
+        type: string
+      street:
+        type: string
+      zip_code:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressUpdateRequest:
+    description: Optional fields to update; only provided fields are changed.
+    properties:
+      building_inner_number:
+        type: string
+      building_outer_number:
+        type: string
+      building_type:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      state:
+        type: string
+      street:
+        type: string
+      zip_code:
+        type: string
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest:
     description: Request body for creating a new appointment
     properties:
@@ -177,6 +371,98 @@ definitions:
         maxLength: 100
         type: string
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateMedicationCatalogRequest:
+    description: Name, optional active_ingredient, presentation, unit, requires_prescription,
+      species_warnings.
+    properties:
+      active_ingredient:
+        type: string
+      name:
+        type: string
+      presentation:
+        type: string
+      requires_prescription:
+        type: boolean
+      species_warnings:
+        type: string
+      unit:
+        type: string
+    required:
+    - name
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateServiceCatalogRequest:
+    description: Name, category, optional description, base_price, duration_minutes,
+      requires_fasting.
+    properties:
+      base_price:
+        type: number
+      category:
+        type: string
+      description:
+        type: string
+      duration_minutes:
+        type: integer
+      name:
+        type: string
+      requires_fasting:
+        type: boolean
+    required:
+    - category
+    - name
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateSessionRequest:
+    description: Pet, customer, employee, optional appointment, clinic service, visit
+      type/date, optional vitals (weight, temp, heart/resp rate), symptoms, diagnosis,
+      treatment, notes, medications, follow-up date.
+    properties:
+      appointment_id:
+        type: integer
+      clinic_service:
+        type: string
+      condition:
+        type: string
+      customer_id:
+        type: integer
+      diagnosis:
+        type: string
+      employee_id:
+        type: integer
+      follow_up_date:
+        description: RFC3339
+        type: string
+      heart_rate:
+        type: integer
+      is_emergency:
+        type: boolean
+      medications:
+        type: string
+      notes:
+        type: string
+      pet_id:
+        type: integer
+      respiratory_rate:
+        type: integer
+      symptoms:
+        type: string
+      temperature_c:
+        type: number
+      treatment:
+        type: string
+      visit_date:
+        description: RFC3339
+        type: string
+      visit_type:
+        type: string
+      weight_kg:
+        type: number
+    required:
+    - clinic_service
+    - customer_id
+    - employee_id
+    - pet_id
+    - visit_date
+    - visit_type
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateUserRequest:
     description: Request body for creating a new user account
     properties:
@@ -234,6 +520,31 @@ definitions:
     - email
     - password
     - role
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateVaccineCatalogRequest:
+    description: Name, optional manufacturer, species, disease_target, total_doses,
+      schedule_days, notes.
+    properties:
+      disease_target:
+        type: string
+      manufacturer:
+        type: string
+      name:
+        type: string
+      notes:
+        type: string
+      schedule_days:
+        items:
+          type: integer
+        type: array
+      species:
+        type: string
+      total_doses:
+        minimum: 1
+        type: integer
+    required:
+    - name
+    - total_doses
     type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.CustomerCreateRequest:
     description: First name, last name, email, gender, date of birth, optional photo
@@ -505,13 +816,9 @@ definitions:
     - id
     type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.EnableTwoFactorRequest:
-    description: '2FA method: totp, sms, or email.'
+    description: '2FA method: totp.'
     properties:
       method:
-        enum:
-        - totp
-        - sms
-        - email
         type: string
     required:
     - method
@@ -524,9 +831,6 @@ definitions:
         type: string
       password:
         maxLength: 128
-        type: string
-      two_factor_code:
-        maxLength: 16
         type: string
     required:
     - email
@@ -545,6 +849,8 @@ definitions:
     description: 'Notification entity: id, user_id, user_email, user_phone, title,
       subject, message, type, channel, created_at.'
     properties:
+      attempts:
+        type: integer
       channel:
         description: Delivery channel (email, sms)
         example: email
@@ -553,6 +859,8 @@ definitions:
         description: Creation timestamp
         example: "2024-01-01T00:00:00Z"
         type: string
+      failure_message:
+        type: string
       id:
         description: Unique identifier of the notification
         example: 665f1c2ab3d4e5f6a7b8c9d0
@@ -560,6 +868,13 @@ definitions:
       message:
         description: Notification message body
         example: Don't forget your appointment at 10:00.
+        type: string
+      provider_reference:
+        type: string
+      sent_at:
+        type: string
+      status:
+        example: sent
         type: string
       subject:
         description: Notification subject
@@ -586,10 +901,44 @@ definitions:
         example: "+1234567890"
         type: string
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentCreateRequest:
+    description: Creates an authorized internal ledger entry. Reference is the caller's
+      idempotency key; this API never sends a payment to an external processor.
+    properties:
+      amount:
+        type: number
+      appointment_id:
+        type: integer
+      currency:
+        type: string
+      customer_id:
+        description: Relations
+        type: integer
+      description:
+        maxLength: 500
+        type: string
+      due_date:
+        type: string
+      invoice_id:
+        type: string
+      method:
+        type: string
+      reason:
+        maxLength: 1000
+        type: string
+      reference:
+        maxLength: 255
+        type: string
+    required:
+    - amount
+    - currency
+    - customer_id
+    - method
+    - reference
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse:
-    description: 'Payment entity: id, amount, currency, status, method, transaction_id,
-      description, due_date, paid_at, customer_id, timestamps, optional refund/delete
-      info.'
+    description: Internal ledger payment with caller reference and locally issued
+      receipt number once settled.
     properties:
       amount:
         type: number
@@ -619,6 +968,12 @@ definitions:
         type: string
       paid_at:
         type: string
+      reason:
+        type: string
+      receipt_number:
+        type: string
+      reference:
+        type: string
       refund_amount:
         type: number
       refunded_at:
@@ -627,9 +982,167 @@ definitions:
         type: string
       status_display:
         type: string
-      transaction_id:
+      updated_at:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentUpdateRequest:
+    description: All fields optional; only provided fields are updated (amount, currency,
+      method, description, due_date, invoice_id).
+    properties:
+      amount:
+        type: number
+      currency:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      due_date:
+        type: string
+      invoice_id:
+        type: string
+      method:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetCreateRequest:
+    description: Name, species, gender, optional breed/age/color/microchip/medical
+      info, customer_id, optional emergency contact.
+    properties:
+      age:
+        type: integer
+      allergies:
+        type: string
+      behavioral_notes:
+        type: string
+      blood_type:
+        type: string
+      breed:
+        type: string
+      color:
+        type: string
+      current_medications:
+        type: string
+      customer_id:
+        type: integer
+      emergency_contact_name:
+        type: string
+      emergency_contact_phone:
+        type: string
+      feeding_instructions:
+        type: string
+      gender:
+        type: string
+      is_neutered:
+        type: boolean
+      microchip_id:
+        type: string
+      name:
+        type: string
+      photo:
+        type: string
+      special_needs:
+        type: string
+      species:
+        type: string
+      veterinary_contact:
+        type: string
+    required:
+    - customer_id
+    - gender
+    - name
+    - species
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse:
+    description: 'Pet entity: id, name, species, gender, customer_id, is_active, optional
+      medical/contact fields, timestamps.'
+    properties:
+      age:
+        type: integer
+      allergies:
+        type: string
+      behavioral_notes:
+        type: string
+      blood_type:
+        type: string
+      breed:
+        type: string
+      color:
+        type: string
+      created_at:
+        type: string
+      current_medications:
+        type: string
+      customer_id:
+        type: integer
+      emergency_contact_name:
+        type: string
+      emergency_contact_phone:
+        type: string
+      feeding_instructions:
+        type: string
+      gender:
+        type: string
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      is_neutered:
+        type: boolean
+      microchip_id:
+        type: string
+      name:
+        type: string
+      photo:
+        type: string
+      special_needs:
+        type: string
+      species:
         type: string
       updated_at:
+        type: string
+      veterinary_contact:
+        type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetUpdateRequest:
+    description: Optional fields to update; only provided fields are changed. Includes
+      is_active for soft-delete.
+    properties:
+      age:
+        type: integer
+      allergies:
+        type: string
+      behavioral_notes:
+        type: string
+      blood_type:
+        type: string
+      breed:
+        type: string
+      color:
+        type: string
+      current_medications:
+        type: string
+      emergency_contact_name:
+        type: string
+      emergency_contact_phone:
+        type: string
+      feeding_instructions:
+        type: string
+      gender:
+        type: string
+      is_active:
+        type: boolean
+      is_neutered:
+        type: boolean
+      microchip_id:
+        type: string
+      name:
+        type: string
+      photo:
+        type: string
+      special_needs:
+        type: string
+      species:
+        type: string
+      veterinary_contact:
         type: string
     type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.ProfileInfo:
@@ -692,14 +1205,9 @@ definitions:
     - refresh_token
     type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.RegisterRequest:
-    description: 'Request body for user registration. Role: admin, veterinarian, customer,
-      or receptionist. Admins get immediate access; others may require activation.'
+    description: Request body for public customer registration.
     properties:
-      bio:
-        maxLength: 500
-        type: string
       date_of_birth:
-        maxLength: 20
         type: string
       email:
         example: user@example.com
@@ -707,14 +1215,21 @@ definitions:
         type: string
       employee_id:
         type: integer
+      first_name:
+        maxLength: 100
+        type: string
       gender:
-        maxLength: 20
+        enum:
+        - male
+        - female
+        - other
+        - not_specified
+        type: string
+      last_name:
+        maxLength: 100
         type: string
       license_number:
         maxLength: 100
-        type: string
-      name:
-        maxLength: 200
         type: string
       password:
         example: SecurePass123!
@@ -728,15 +1243,14 @@ definitions:
         maxLength: 500
         type: string
       role:
-        enum:
-        - admin
-        - veterinarian
-        - customer
-        - receptionist
         example: customer
         type: string
     required:
+    - date_of_birth
     - email
+    - first_name
+    - gender
+    - last_name
     - password
     - role
     type: object
@@ -837,6 +1351,20 @@ definitions:
       type:
         type: string
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePrescriptionRequest:
+    description: Optional dosage, frequency, duration_days, route, instructions.
+    properties:
+      dosage:
+        type: string
+      duration_days:
+        type: integer
+      frequency:
+        type: string
+      instructions:
+        type: string
+      route:
+        type: string
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateProfileRequest:
     description: Authenticated user's profile fields to update (name, gender, date
       of birth, photo URL, bio).
@@ -858,6 +1386,62 @@ definitions:
     - gender
     - name
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSessionRequest:
+    description: Optional fields to update; only provided fields are changed.
+    properties:
+      appointment_id:
+        type: integer
+      clinic_service:
+        type: string
+      condition:
+        type: string
+      diagnosis:
+        type: string
+      employee_id:
+        type: integer
+      follow_up_date:
+        type: string
+      heart_rate:
+        type: integer
+      is_emergency:
+        type: boolean
+      medications:
+        type: string
+      notes:
+        type: string
+      respiratory_rate:
+        type: integer
+      symptoms:
+        type: string
+      temperature_c:
+        type: number
+      treatment:
+        type: string
+      visit_date:
+        type: string
+      visit_type:
+        type: string
+      weight_kg:
+        type: number
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSurgeryRequest:
+    description: Optional anesthesia, notes, duration, outcome.
+    properties:
+      anesthesia_agent:
+        type: string
+      anesthesia_type:
+        type: string
+      duration_minutes:
+        type: integer
+      intra_op_notes:
+        type: string
+      outcome:
+        type: string
+      post_op_notes:
+        type: string
+      pre_op_notes:
+        type: string
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateUserStatusRequest:
     description: Request body for updating user account status
     properties:
@@ -873,6 +1457,18 @@ definitions:
         type: string
     required:
     - status
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateVaccinationRequest:
+    description: Optional batch_number, site_of_injection, next_dose_date, reaction_notes.
+    properties:
+      batch_number:
+        type: string
+      next_dose_date:
+        type: string
+      reaction_notes:
+        type: string
+      site_of_injection:
+        type: string
     type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserAuthResponse:
     description: User identifier, email, and role returned in login/session payloads.
@@ -973,10 +1569,14 @@ definitions:
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyTwoFactorRequest:
     description: One-time 2FA code (TOTP or backup code).
     properties:
+      challenge_token:
+        maxLength: 64
+        type: string
       two_factor_code:
         maxLength: 16
         type: string
     required:
+    - challenge_token
     - two_factor_code
     type: object
   clinic-vet-api_internal_shared_http.APIResponse:
@@ -1053,12 +1653,172 @@ info:
   title: API Clínica Veterinaria
   version: "2.0"
 paths:
+  /addresses:
+    get:
+      description: Lists addresses. Requires admin or receptionist role.
+      parameters:
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Search addresses
+      tags:
+      - addresses
+  /addresses/users/{user_id}:
+    get:
+      description: Lists addresses for a user. Requires admin or receptionist role.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List user addresses
+      tags:
+      - addresses
+    post:
+      description: Creates an address for a user. Requires admin or receptionist role.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressCreateRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create user address
+      tags:
+      - addresses
+  /addresses/users/{user_id}/{id}:
+    delete:
+      description: Deletes an address for a user. Requires admin or receptionist role.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user address
+      tags:
+      - addresses
+    get:
+      description: Returns an address for a user. Requires admin or receptionist role.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get user address
+      tags:
+      - addresses
+    put:
+      description: Updates an address for a user. Requires admin or receptionist role.
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressUpdateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user address
+      tags:
+      - addresses
   /appointments:
     get:
       consumes:
       - application/json
       description: Paginated search of all appointments with filters. Requires admin
-        or manager role.
+        or receptionist role.
       parameters:
       - description: Search criteria and pagination
         in: body
@@ -1094,14 +1854,14 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Search appointments (manager/admin)
+      summary: Search appointments (receptionist/admin)
       tags:
       - appointments
     post:
       consumes:
       - application/json
-      description: Creates a new appointment, optionally assigned to an employee via
-        query param. Requires admin or manager role.
+      description: Creates a new appointment, optionally assigned to a veterinarian
+        via query param. Requires admin or receptionist role.
       parameters:
       - description: Employee ID to assign
         in: query
@@ -1134,7 +1894,7 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Create appointment (manager/admin)
+      summary: Create appointment (receptionist/admin)
       tags:
       - appointments
   /appointments/{id}:
@@ -1142,7 +1902,7 @@ paths:
       consumes:
       - application/json
       description: Deletes an appointment. Soft-delete by default; pass hard=true
-        for permanent deletion. Requires admin or manager role.
+        for permanent deletion. Requires admin or receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1179,13 +1939,14 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Delete appointment (manager/admin)
+      summary: Delete appointment (receptionist/admin)
       tags:
       - appointments
     get:
       consumes:
       - application/json
-      description: Returns a single appointment by ID. Requires admin or manager role.
+      description: Returns a single appointment by ID. Requires admin or receptionist
+        role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1222,14 +1983,14 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get appointment by ID (manager/admin)
+      summary: Get appointment by ID (receptionist/admin)
       tags:
       - appointments
     put:
       consumes:
       - application/json
       description: Updates general info (reason, notes, service) of an appointment.
-        Requires admin or manager role.
+        Requires admin or receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1267,15 +2028,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Update appointment (manager/admin)
+      summary: Update appointment (receptionist/admin)
       tags:
       - appointments
   /appointments/{id}/cancel:
     post:
       consumes:
       - application/json
-      description: Cancels an appointment, with optional employee and reason. Requires
-        admin or manager role.
+      description: Cancels an appointment, with optional veterinarian and reason.
+        Requires admin or receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1315,15 +2076,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Cancel appointment (manager/admin)
+      summary: Cancel appointment (receptionist/admin)
       tags:
       - appointments
   /appointments/{id}/complete:
     post:
       consumes:
       - application/json
-      description: Marks an appointment as completed, with optional employee and notes.
-        Requires admin or manager role.
+      description: Marks an appointment as completed, with optional veterinarian and
+        notes. Requires admin or receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1363,15 +2124,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Complete appointment (manager/admin)
+      summary: Complete appointment (receptionist/admin)
       tags:
       - appointments
   /appointments/{id}/confirm:
     post:
       consumes:
       - application/json
-      description: Confirms an appointment and assigns the employee given in the query
-        param. Requires admin or manager role.
+      description: Confirms an appointment and assigns the veterinarian given in the
+        query param. Requires admin or receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1408,15 +2169,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Confirm appointment (manager/admin)
+      summary: Confirm appointment (receptionist/admin)
       tags:
       - appointments
   /appointments/{id}/not-attend:
     post:
       consumes:
       - application/json
-      description: Marks an appointment as not attended, with optional employee. Requires
-        admin or manager role.
+      description: Marks an appointment as not attended, with optional veterinarian.
+        Requires admin or receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1452,7 +2213,7 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Mark appointment as not attended (manager/admin)
+      summary: Mark appointment as not attended (receptionist/admin)
       tags:
       - appointments
   /appointments/{id}/reschedule:
@@ -1460,7 +2221,7 @@ paths:
       consumes:
       - application/json
       description: Reschedules an appointment to a new date/time. Requires admin or
-        manager role.
+        receptionist role.
       parameters:
       - description: Appointment ID
         in: path
@@ -1498,7 +2259,7 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Reschedule appointment (manager/admin)
+      summary: Reschedule appointment (receptionist/admin)
       tags:
       - appointments
   /auth/2fa/disable:
@@ -1530,8 +2291,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: 'Enables 2FA for the authenticated user (method: totp, sms, or
-        email). Requires Bearer auth.'
+      description: Enables TOTP 2FA for the authenticated user and returns recovery
+        codes once. Requires Bearer auth.
       parameters:
       - description: 2FA method
         in: body
@@ -1567,8 +2328,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Completes login by verifying the two-factor code. Returns new session
-        payload. Requires Bearer auth.
+      description: Completes login using an opaque two-factor challenge and a TOTP
+        or backup code.
       parameters:
       - description: 2FA code
         in: body
@@ -1600,8 +2361,6 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-      security:
-      - BearerAuth: []
       summary: Verify 2FA code
       tags:
       - auth
@@ -1649,11 +2408,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Authenticates with email and password. Returns access and refresh
-        tokens. If 2FA is enabled, data contains dtos.RequiresTwoFactorResponse instead
-        of the session.
+      description: Authenticates with email and password. Returns an opaque challenge
+        when TOTP verification is required.
       parameters:
-      - description: Email and password; optional two_factor_code
+      - description: Email and password
         in: body
         name: body
         required: true
@@ -1754,7 +2512,7 @@ paths:
       consumes:
       - application/json
       description: Exchanges a valid refresh token for a new access token and refresh
-        token. Requires Bearer auth.
+        token.
       parameters:
       - description: Refresh token
         in: body
@@ -1786,8 +2544,6 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-      security:
-      - BearerAuth: []
       summary: Refresh access token
       tags:
       - auth
@@ -1795,8 +2551,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new user account (admin, customer, or employee). Admins
-        get immediate access; others may require activation.
+      description: Creates a pending customer account and emails an activation code.
       parameters:
       - description: Registration data
         in: body
@@ -1826,8 +2581,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Sends a password reset link/code to the given email. Requires Bearer
-        auth.
+      description: Sends a password reset code to the given email.
       parameters:
       - description: Email
         in: body
@@ -1854,8 +2608,6 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-      security:
-      - BearerAuth: []
       summary: Request password reset
       tags:
       - auth
@@ -1864,7 +2616,6 @@ paths:
       consumes:
       - application/json
       description: Resets the user password using email and the code received by email.
-        Requires Bearer auth.
       parameters:
       - description: Email and reset code
         in: body
@@ -1891,8 +2642,6 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-      security:
-      - BearerAuth: []
       summary: Reset password
       tags:
       - auth
@@ -1900,7 +2649,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Paginated search/filter of customers. Requires admin or manager
+      description: Paginated search/filter of customers. Requires admin or receptionist
         role.
       parameters:
       - description: Search criteria and pagination
@@ -1943,7 +2692,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new customer. Requires admin or manager role.
+      description: Creates a new customer. Requires admin or receptionist role.
       parameters:
       - description: Customer data
         in: body
@@ -1979,7 +2728,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Soft-deletes a customer by ID. Requires admin or manager role.
+      description: Soft-deletes a customer by ID. Requires admin or receptionist role.
       parameters:
       - description: Customer ID
         in: path
@@ -2013,7 +2762,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a single customer by ID. Requires admin or manager role.
+      description: Returns a single customer by ID. Requires admin or receptionist
+        role.
       parameters:
       - description: Customer ID
         in: path
@@ -2056,7 +2806,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Updates an existing customer by ID. Requires admin or manager role.
+      description: Updates an existing customer by ID. Requires admin or receptionist
+        role.
       parameters:
       - description: Customer data to update
         in: body
@@ -2093,7 +2844,7 @@ paths:
       consumes:
       - application/json
       description: Returns paginated appointments for a given customer. Requires admin
-        or manager role.
+        or receptionist role.
       parameters:
       - description: Customer ID
         in: path
@@ -2138,14 +2889,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get appointments by customer (manager/admin)
+      summary: Get appointments by customer (receptionist/admin)
       tags:
       - appointments
   /customers/{id}/restore:
     post:
       consumes:
       - application/json
-      description: Restores a soft-deleted customer. Requires admin or manager role.
+      description: Restores a soft-deleted customer. Requires admin or receptionist
+        role.
       parameters:
       - description: Customer ID
         in: path
@@ -2180,8 +2932,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Paginated search/filter of employees. Requires admin or manager
-        role.
+      description: Paginated search/filter of employees. Requires admin role.
       parameters:
       - description: Search criteria and pagination
         in: body
@@ -2223,7 +2974,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new employee. Requires admin or manager role.
+      description: Creates a new employee. Requires admin role.
       parameters:
       - description: Employee data
         in: body
@@ -2259,7 +3010,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Soft-deletes an employee by ID. Requires admin or manager role.
+      description: Soft-deletes an employee by ID. Requires admin role.
       parameters:
       - description: Employee ID
         in: path
@@ -2293,7 +3044,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a single employee by ID. Requires admin or manager role.
+      description: Returns a single employee by ID. Requires admin role.
       parameters:
       - description: Employee ID
         in: path
@@ -2336,7 +3087,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Updates an existing employee by ID. Requires admin or manager role.
+      description: Updates an existing employee by ID. Requires admin role.
       parameters:
       - description: Employee data to update
         in: body
@@ -2373,7 +3124,7 @@ paths:
       consumes:
       - application/json
       description: Returns paginated appointments for a given employee. Requires admin
-        or manager role.
+        or receptionist role.
       parameters:
       - description: Employee ID
         in: path
@@ -2418,14 +3169,14 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get appointments by employee (manager/admin)
+      summary: Get appointments by employee (receptionist/admin)
       tags:
       - appointments
   /employees/{id}/restore:
     post:
       consumes:
       - application/json
-      description: Restores a soft-deleted employee. Requires admin or manager role.
+      description: Restores a soft-deleted employee. Requires admin role.
       parameters:
       - description: Employee ID
         in: path
@@ -2460,8 +3211,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns paginated appointments assigned to the authenticated employee.
-        Requires employee or manager role.
+      description: Returns paginated appointments assigned to the authenticated veterinarian.
+        Requires veterinarian role.
       parameters:
       - default: 1
         description: Page number
@@ -2497,51 +3248,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get my assigned appointments (employee)
-      tags:
-      - appointments
-    post:
-      consumes:
-      - application/json
-      description: Creates an appointment assigned to the authenticated employee.
-        Requires employee or manager role.
-      parameters:
-      - description: Appointment data
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Appointment created (data contains new appointment ID)
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "400":
-          description: Validation error
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Create appointment (employee)
+      summary: Get my assigned appointments (veterinarian)
       tags:
       - appointments
   /employees/appointments/{id}:
     get:
       consumes:
       - application/json
-      description: Returns a single appointment assigned to the authenticated employee.
-        Requires employee or manager role.
+      description: Returns a single appointment assigned to the authenticated veterinarian.
+        Requires veterinarian role.
       parameters:
       - description: Appointment ID
         in: path
@@ -2578,14 +3293,14 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get my assigned appointment by ID (employee)
+      summary: Get my assigned appointment by ID (veterinarian)
       tags:
       - appointments
     put:
       consumes:
       - application/json
       description: Updates general info (reason, notes, service) of an appointment
-        assigned to the authenticated employee. Requires employee or manager role.
+        assigned to the authenticated veterinarian. Requires veterinarian role.
       parameters:
       - description: Appointment ID
         in: path
@@ -2623,15 +3338,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Update my appointment (employee)
+      summary: Update my appointment (veterinarian)
       tags:
       - appointments
   /employees/appointments/{id}/cancel:
     post:
       consumes:
       - application/json
-      description: Cancels an appointment assigned to the authenticated employee.
-        Requires employee or manager role.
+      description: Cancels an appointment assigned to the authenticated veterinarian.
+        Requires veterinarian role.
       parameters:
       - description: Appointment ID
         in: path
@@ -2667,15 +3382,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Cancel my appointment (employee)
+      summary: Cancel my appointment (veterinarian)
       tags:
       - appointments
   /employees/appointments/{id}/complete:
     post:
       consumes:
       - application/json
-      description: Marks an appointment assigned to the authenticated employee as
-        completed. Requires employee or manager role.
+      description: Marks an appointment assigned to the authenticated veterinarian
+        as completed. Requires veterinarian role.
       parameters:
       - description: Appointment ID
         in: path
@@ -2711,55 +3426,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Complete my appointment (employee)
-      tags:
-      - appointments
-  /employees/appointments/{id}/confirm:
-    post:
-      consumes:
-      - application/json
-      description: Confirms an appointment assigned to the authenticated employee.
-        Requires employee or manager role.
-      parameters:
-      - description: Appointment ID
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Appointment confirmed
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "400":
-          description: Invalid ID
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "404":
-          description: Appointment not found
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
-      security:
-      - BearerAuth: []
-      summary: Confirm my appointment (employee)
+      summary: Complete my appointment (veterinarian)
       tags:
       - appointments
   /employees/appointments/{id}/not-attend:
     post:
       consumes:
       - application/json
-      description: Marks an appointment assigned to the authenticated employee as
-        not attended. Requires employee or manager role.
+      description: Marks an appointment assigned to the authenticated veterinarian
+        as not attended. Requires veterinarian role.
       parameters:
       - description: Appointment ID
         in: path
@@ -2791,15 +3466,15 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Mark my appointment as not attended (employee)
+      summary: Mark my appointment as not attended (veterinarian)
       tags:
       - appointments
   /employees/appointments/{id}/reschedule:
     post:
       consumes:
       - application/json
-      description: Reschedules an appointment assigned to the authenticated employee
-        to a new date/time. Requires employee or manager role.
+      description: Reschedules an appointment assigned to the authenticated veterinarian
+        to a new date/time. Requires veterinarian role.
       parameters:
       - description: Appointment ID
         in: path
@@ -2837,25 +3512,110 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Reschedule my appointment (employee)
+      summary: Reschedule my appointment (veterinarian)
       tags:
       - appointments
-  /health:
+  /me/addresses:
     get:
-      consumes:
-      - application/json
-      description: Check if the API is running
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
-      summary: Health Check
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List my addresses
       tags:
-      - health
+      - addresses
+    post:
+      parameters:
+      - description: Address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressCreateRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create my address
+      tags:
+      - addresses
+  /me/addresses/{id}:
+    delete:
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete my address
+      tags:
+      - addresses
+    get:
+      description: Returns an address belonging to the authenticated user.
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get my address
+      tags:
+      - addresses
+    put:
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressUpdateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my address
+      tags:
+      - addresses
   /me/appointments:
     get:
       consumes:
@@ -2981,6 +3741,181 @@ paths:
       summary: Get my appointment by ID (customer)
       tags:
       - appointments
+  /me/appointments/{id}/cancel:
+    post:
+      description: Cancels a cancellable appointment belonging to the authenticated
+        customer. Requires customer role.
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Cancellation reason
+        in: query
+        name: reason
+        type: string
+      responses:
+        "200":
+          description: Appointment cancelled
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid ID or appointment cannot be cancelled
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: Appointment not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel my appointment (customer)
+      tags:
+      - appointments
+  /me/medical/pets/{pet_id}/prescriptions/active:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List my pet active prescriptions
+      tags:
+      - medical
+  /me/medical/pets/{pet_id}/sessions:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List my pet medical sessions
+      tags:
+      - medical
+  /me/medical/pets/{pet_id}/vaccination-history:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      - description: Vaccine ID
+        in: query
+        name: vaccine_id
+        type: integer
+      - description: Start date
+        in: query
+        name: date_from
+        type: string
+      - description: End date
+        in: query
+        name: date_to
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List my pet vaccination history
+      tags:
+      - medical
+  /me/medical/pets/{pet_id}/vaccination-summary:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my pet vaccination summary
+      tags:
+      - medical
+  /me/medical/sessions:
+    get:
+      description: Requires customer role.
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List my medical sessions
+      tags:
+      - medical
+  /me/medical/sessions/{id}:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my medical session
+      tags:
+      - medical
+  /me/medical/sessions/{id}/full:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get my full medical session
+      tags:
+      - medical
   /me/notifications:
     get:
       consumes:
@@ -3070,12 +4005,1030 @@ paths:
       summary: Get my notification by ID
       tags:
       - notifications
+  /me/payments:
+    get:
+      description: Lists payments belonging to the authenticated customer. Requires
+        customer role.
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List my payments
+      tags:
+      - payments
+  /me/payments/{id}:
+    get:
+      description: Returns a payment belonging to the authenticated customer. Requires
+        customer role.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get my payment
+      tags:
+      - payments
+  /me/pets:
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List my pets
+      tags:
+      - pets
+    post:
+      description: Requires customer role.
+      parameters:
+      - description: Pet
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetCreateRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create my pet
+      tags:
+      - pets
+  /me/pets/{id}:
+    delete:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete my pet
+      tags:
+      - pets
+    get:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get my pet
+      tags:
+      - pets
+    put:
+      description: Requires customer role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Pet
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetUpdateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my pet
+      tags:
+      - pets
+  /medical/attachments:
+    post:
+      parameters:
+      - description: Attachment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddAttachmentRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add attachment
+      tags:
+      - medical
+  /medical/attachments/{attachment_id}:
+    delete:
+      parameters:
+      - description: Attachment ID
+        in: path
+        name: attachment_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove attachment
+      tags:
+      - medical
+  /medical/catalogs/medications:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List medication catalog
+      tags:
+      - medical
+    post:
+      parameters:
+      - description: Medication
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateMedicationCatalogRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create medication catalog entry
+      tags:
+      - medical
+  /medical/catalogs/medications/{id}:
+    delete:
+      parameters:
+      - description: Medication ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate medication catalog entry
+      tags:
+      - medical
+    get:
+      parameters:
+      - description: Medication ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get medication catalog entry
+      tags:
+      - medical
+  /medical/catalogs/medications/search:
+    get:
+      parameters:
+      - description: Search term
+        in: query
+        name: term
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search medication catalog
+      tags:
+      - medical
+  /medical/catalogs/services:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List service catalog
+      tags:
+      - medical
+    post:
+      parameters:
+      - description: Service
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateServiceCatalogRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create service catalog entry
+      tags:
+      - medical
+  /medical/catalogs/services/{id}:
+    delete:
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate service catalog entry
+      tags:
+      - medical
+    get:
+      parameters:
+      - description: Service ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get service catalog entry
+      tags:
+      - medical
+  /medical/catalogs/services/category/{category}:
+    get:
+      parameters:
+      - description: Service category
+        in: path
+        name: category
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List services by category
+      tags:
+      - medical
+  /medical/catalogs/vaccines:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List vaccine catalog
+      tags:
+      - medical
+    post:
+      parameters:
+      - description: Vaccine
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateVaccineCatalogRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create vaccine catalog entry
+      tags:
+      - medical
+  /medical/catalogs/vaccines/{id}:
+    delete:
+      parameters:
+      - description: Vaccine ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Deactivate vaccine catalog entry
+      tags:
+      - medical
+    get:
+      parameters:
+      - description: Vaccine ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get vaccine catalog entry
+      tags:
+      - medical
+  /medical/catalogs/vaccines/species/{species}:
+    get:
+      parameters:
+      - description: Species
+        in: path
+        name: species
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List vaccines by species
+      tags:
+      - medical
+  /medical/customers/{customer_id}/sessions:
+    get:
+      description: Requires veterinarian or admin role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: customer_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List customer medical sessions
+      tags:
+      - medical
+  /medical/pets/{pet_id}/prescriptions/active:
+    get:
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List active pet prescriptions
+      tags:
+      - medical
+  /medical/pets/{pet_id}/sessions:
+    get:
+      description: Requires veterinarian or admin role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List pet medical sessions
+      tags:
+      - medical
+  /medical/pets/{pet_id}/vaccination-summary:
+    get:
+      parameters:
+      - description: Pet ID
+        in: path
+        name: pet_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get pet vaccination summary
+      tags:
+      - medical
+  /medical/prescriptions:
+    post:
+      parameters:
+      - description: Prescription
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddPrescriptionRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add prescription
+      tags:
+      - medical
+  /medical/prescriptions/{prescription_id}:
+    delete:
+      parameters:
+      - description: Prescription ID
+        in: path
+        name: prescription_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove prescription
+      tags:
+      - medical
+    put:
+      parameters:
+      - description: Prescription ID
+        in: path
+        name: prescription_id
+        required: true
+        type: integer
+      - description: Prescription
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePrescriptionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update prescription
+      tags:
+      - medical
+  /medical/session-services:
+    post:
+      parameters:
+      - description: Session service
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSessionServiceRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add session service
+      tags:
+      - medical
+  /medical/session-services/{session_service_id}:
+    delete:
+      parameters:
+      - description: Session service ID
+        in: path
+        name: session_service_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove session service
+      tags:
+      - medical
+  /medical/sessions:
+    get:
+      description: Requires veterinarian or admin role.
+      parameters:
+      - description: Pet ID
+        in: query
+        name: pet_id
+        type: integer
+      - description: Customer ID
+        in: query
+        name: customer_id
+        type: integer
+      - description: Employee ID
+        in: query
+        name: employee_id
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search medical sessions
+      tags:
+      - medical
+    post:
+      parameters:
+      - description: Session
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateSessionRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create medical session
+      tags:
+      - medical
+  /medical/sessions/{id}:
+    delete:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete medical session
+      tags:
+      - medical
+    get:
+      description: Requires veterinarian or admin role.
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get medical session
+      tags:
+      - medical
+    put:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Session
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSessionRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update medical session
+      tags:
+      - medical
+  /medical/sessions/{id}/attachments:
+    get:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List session attachments
+      tags:
+      - medical
+  /medical/sessions/{id}/full:
+    get:
+      description: Requires veterinarian or admin role.
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get full medical session
+      tags:
+      - medical
+  /medical/sessions/{id}/hard:
+    delete:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Permanently delete medical session
+      tags:
+      - medical
+  /medical/sessions/{id}/prescriptions:
+    get:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List session prescriptions
+      tags:
+      - medical
+  /medical/sessions/{id}/restore:
+    post:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore medical session
+      tags:
+      - medical
+  /medical/sessions/{id}/services:
+    get:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List session services
+      tags:
+      - medical
+  /medical/sessions/{id}/surgeries:
+    get:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List session surgeries
+      tags:
+      - medical
+  /medical/sessions/{id}/vaccinations:
+    get:
+      parameters:
+      - description: Session ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List session vaccinations
+      tags:
+      - medical
+  /medical/sessions/stats:
+    get:
+      description: Requires veterinarian or admin role.
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get medical session statistics
+      tags:
+      - medical
+  /medical/surgeries:
+    post:
+      parameters:
+      - description: Surgery
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSurgeryRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add surgery
+      tags:
+      - medical
+  /medical/surgeries/{surgery_id}:
+    delete:
+      parameters:
+      - description: Surgery ID
+        in: path
+        name: surgery_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove surgery
+      tags:
+      - medical
+    put:
+      parameters:
+      - description: Surgery ID
+        in: path
+        name: surgery_id
+        required: true
+        type: integer
+      - description: Surgery
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSurgeryRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update surgery
+      tags:
+      - medical
+  /medical/vaccination-history:
+    get:
+      parameters:
+      - description: Pet ID
+        in: query
+        name: pet_id
+        type: integer
+      - description: Vaccine ID
+        in: query
+        name: vaccine_id
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Search vaccination history
+      tags:
+      - medical
+  /medical/vaccinations:
+    post:
+      parameters:
+      - description: Vaccination
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddVaccinationRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Add vaccination
+      tags:
+      - medical
+  /medical/vaccinations/{vaccination_id}:
+    delete:
+      parameters:
+      - description: Vaccination ID
+        in: path
+        name: vaccination_id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove vaccination
+      tags:
+      - medical
+    put:
+      parameters:
+      - description: Vaccination ID
+        in: path
+        name: vaccination_id
+        required: true
+        type: integer
+      - description: Vaccination
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateVaccinationRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update vaccination
+      tags:
+      - medical
   /notifications:
     post:
       consumes:
       - application/json
       description: Manually sends a notification through the given channel (email,
-        sms). Requires employee, manager, or admin role.
+        sms). Requires veterinarian, receptionist, or admin role.
       parameters:
       - description: Notification to send
         in: body
@@ -3111,7 +5064,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a single notification by ID. Requires employee, manager,
+      description: Returns a single notification by ID. Requires veterinarian, receptionist,
         or admin role.
       parameters:
       - description: Notification ID
@@ -3153,7 +5106,7 @@ paths:
       consumes:
       - application/json
       description: Returns paginated notifications filtered by delivery channel (email,
-        sms). Requires employee, manager, or admin role.
+        sms). Requires veterinarian, receptionist, or admin role.
       parameters:
       - description: Delivery channel (email, sms)
         in: path
@@ -3206,7 +5159,7 @@ paths:
       consumes:
       - application/json
       description: Returns a summary of sent notifications, optionally filtered by
-        sender. Requires employee, manager, or admin role.
+        sender. Requires veterinarian, receptionist, or admin role.
       parameters:
       - description: Sender ID to filter by
         in: query
@@ -3243,8 +5196,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns paginated notifications filtered by type. Requires employee,
-        manager, or admin role.
+      description: Returns paginated notifications filtered by type. Requires veterinarian,
+        receptionist, or admin role.
       parameters:
       - description: Notification type
         in: path
@@ -3292,7 +5245,73 @@ paths:
       summary: Get notifications by type (staff)
       tags:
       - notifications
+  /payments:
+    get:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Search payments
+      tags:
+      - payments
+    post:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentCreateRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create payment
+      tags:
+      - payments
   /payments/{id}:
+    delete:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete payment
+      tags:
+      - payments
     get:
       consumes:
       - application/json
@@ -3336,12 +5355,254 @@ paths:
       summary: Get payment by ID
       tags:
       - payments
+    put:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Payment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentUpdateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update payment
+      tags:
+      - payments
+  /payments/{id}/cancel:
+    post:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Cancellation reason
+        in: formData
+        name: reason
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancel payment
+      tags:
+      - payments
+  /payments/{id}/process:
+    post:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Processing reason
+        in: formData
+        name: reason
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Process payment
+      tags:
+      - payments
+  /payments/{id}/refund:
+    post:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Refund reason
+        in: formData
+        name: reason
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Refund payment
+      tags:
+      - payments
+  /payments/customers/{id}:
+    get:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List customer payments
+      tags:
+      - payments
+  /payments/reference/{reference}:
+    get:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Payment reference
+        in: path
+        name: reference
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get payment by reference
+      tags:
+      - payments
+  /pets:
+    get:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Search pets
+      tags:
+      - pets
+  /pets/{id}:
+    delete:
+      description: Requires admin or receptionist role. Set hard to permanently delete.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Permanently delete
+        in: query
+        name: hard
+        type: boolean
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete pet
+      tags:
+      - pets
+    get:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Get pet by ID
+      tags:
+      - pets
+    put:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Pet
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetUpdateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update pet
+      tags:
+      - pets
   /pets/{id}/appointments:
     get:
       consumes:
       - application/json
       description: Returns paginated appointments for a given pet. Requires admin
-        or manager role.
+        or receptionist role.
       parameters:
       - description: Pet ID
         in: path
@@ -3386,9 +5647,91 @@ paths:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       security:
       - BearerAuth: []
-      summary: Get appointments by pet (manager/admin)
+      summary: Get appointments by pet (receptionist/admin)
       tags:
       - appointments
+  /pets/{id}/restore:
+    post:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Pet ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Restore pet
+      tags:
+      - pets
+  /pets/customers/{customer_id}:
+    get:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: customer_id
+        required: true
+        type: integer
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse'
+                  type: array
+              type: object
+      security:
+      - BearerAuth: []
+      summary: List customer pets
+      tags:
+      - pets
+    post:
+      description: Requires admin or receptionist role.
+      parameters:
+      - description: Customer ID
+        in: path
+        name: customer_id
+        required: true
+        type: integer
+      - default: true
+        description: Whether the pet is active
+        in: query
+        name: is_active
+        type: boolean
+      - description: Pet
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetCreateRequest'
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create customer pet
+      tags:
+      - pets
   /profile:
     get:
       consumes:
@@ -3459,8 +5802,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Paginated search and filter of users. Requires admin or manager
-        role.
+      description: Paginated search and filter of users. Requires admin role.
       parameters:
       - default: 1
         description: Page number
@@ -3518,7 +5860,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new user. Requires admin or manager role.
+      description: Creates a new user. Requires admin role.
       parameters:
       - description: User data
         in: body
@@ -3554,7 +5896,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Soft-deletes a user by ID. Requires admin or manager role.
+      description: Soft-deletes a user by ID. Requires admin role.
       parameters:
       - description: User ID
         in: path
@@ -3588,7 +5930,7 @@ paths:
     get:
       consumes:
       - application/json
-      description: Returns a single user by ID. Requires admin or manager role.
+      description: Returns a single user by ID. Requires admin role.
       parameters:
       - description: User ID
         in: path
@@ -3632,7 +5974,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Restores a soft-deleted user. Requires admin or manager role.
+      description: Restores a soft-deleted user. Requires admin role.
       parameters:
       - description: User ID
         in: path
@@ -3668,7 +6010,7 @@ paths:
       consumes:
       - application/json
       description: Updates the status of a user (e.g. activate/deactivate). Requires
-        admin or manager role.
+        admin role.
       parameters:
       - description: User ID
         in: path

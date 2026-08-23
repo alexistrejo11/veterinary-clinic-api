@@ -91,7 +91,7 @@ func (m *AppointmentResponseMapper) RequestToCreateCommand(
 
 // RequestToUpdateCommand maps DTO to UpdateCommand with full parsing and validation
 func (m *AppointmentResponseMapper) RequestToUpdateCommand(
-	req dtos.AppointmentUpdateGeneralInfoRequest, apptID uint,
+	req dtos.AppointmentUpdateGeneralInfoRequest, apptID uint, optEmpID *uint,
 ) (appointments.UpdateCommand, error) {
 	// Parse service (optional)
 	var service *appointments.ClinicService
@@ -104,9 +104,15 @@ func (m *AppointmentResponseMapper) RequestToUpdateCommand(
 	}
 
 	appointmentID := appointments.NewAppointmentID(apptID)
+	var employeeID *employees.EmployeeID
+	if optEmpID != nil {
+		id := employees.NewEmployeeID(*optEmpID)
+		employeeID = &id
+	}
 
 	return appointments.NewUpdateCommand(
 		appointmentID,
+		employeeID,
 		req.Reason,
 		req.Notes,
 		service,
@@ -115,12 +121,18 @@ func (m *AppointmentResponseMapper) RequestToUpdateCommand(
 
 // RequestToRescheduleCommand maps DTO to RescheduleCommand
 func (m *AppointmentResponseMapper) RequestToRescheduleCommand(
-	req dtos.RescheduleAppointmentRequest, apptID uint,
+	req dtos.RescheduleAppointmentRequest, apptID uint, optEmpID *uint,
 ) appointments.RescheduleCommand {
 	appointmentID := appointments.NewAppointmentID(apptID)
+	var employeeID *employees.EmployeeID
+	if optEmpID != nil {
+		id := employees.NewEmployeeID(*optEmpID)
+		employeeID = &id
+	}
 
 	return appointments.NewRescheduleCommand(
 		appointmentID,
+		employeeID,
 		req.NewDateTime,
 		req.Reason,
 	)
@@ -185,6 +197,7 @@ func (m *AppointmentResponseMapper) ToCompleteCommand(
 func (m *AppointmentResponseMapper) ToCancelCommand(
 	appointmentID uint,
 	employeeID *uint,
+	customerID *uint,
 	reason string,
 ) appointments.CancelCommand {
 	apptID := appointments.NewAppointmentID(appointmentID)
@@ -194,8 +207,13 @@ func (m *AppointmentResponseMapper) ToCancelCommand(
 		emp := employees.NewEmployeeID(*employeeID)
 		empID = &emp
 	}
+	var custID *customers.CustomerID
+	if customerID != nil {
+		id := customers.NewCustomerID(*customerID)
+		custID = &id
+	}
 
-	return appointments.NewCancelCommand(apptID, empID, reason)
+	return appointments.NewCancelCommand(apptID, empID, custID, reason)
 }
 
 // RequestToSearchQuery maps search request DTO to GetBySpecQuery with full parsing

@@ -25,7 +25,6 @@ go.work.sum
 .env
 .env.*
 !.env.example
-/certs
 
 # Logs
 /logs/

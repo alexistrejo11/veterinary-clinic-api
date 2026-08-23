@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
+	"clinic-vet-api/database/sqlc"
 	cust "clinic-vet-api/internal/core/customers"
 	emp "clinic-vet-api/internal/core/employees"
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/database/sqlc"
 
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -220,8 +220,18 @@ func (r *SqlcUserRepository) Count(ctx context.Context, spec users.UserSpecifica
 }
 
 func (r *SqlcUserRepository) IsDeletedByID(ctx context.Context, id shared.UserID) (bool, error) {
-	// TODO
-	return false, nil
+	deleted, err := r.queries.IsDeletedUserByID(ctx, id.Int32())
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, r.dbError(OpSelect, "failed to check if user is deleted", err)
+	}
+	isDeleted, ok := deleted.(bool)
+	if !ok {
+		return false, r.dbError(OpSelect, "invalid deleted status", fmt.Errorf("unexpected result type %T", deleted))
+	}
+	return isDeleted, nil
 }
 
 // ============================================================================
@@ -344,6 +354,9 @@ func (r *SqlcUserRepository) ToEntity(sqlRow sqlc.User) users.User {
 	id := shared.NewUserID(uint(sqlRow.ID))
 	role := users.UserRole(sqlRow.Role)
 	phoneNumber := r.pgMap.PgText.ToPhoneNumberPtr(sqlRow.PhoneNumber)
+	if phoneNumber == nil {
+		phoneNumber = &users.PhoneNumber{}
+	}
 	userStatus := users.UserStatus(sqlRow.Status)
 
 	// Build OAuth token if available

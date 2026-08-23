@@ -139,7 +139,11 @@ func (s *petService) ActivatePet(ctx context.Context, id PetID) error {
 	if err != nil {
 		return err
 	}
-	return pet.Activate()
+	if err := pet.Activate(); err != nil {
+		return err
+	}
+	_, err = s.repository.Save(ctx, pet)
+	return err
 }
 
 func (s *petService) DeactivatePet(ctx context.Context, id PetID) error {
@@ -147,7 +151,11 @@ func (s *petService) DeactivatePet(ctx context.Context, id PetID) error {
 	if err != nil {
 		return err
 	}
-	return pet.Deactivate()
+	if err := pet.Deactivate(); err != nil {
+		return err
+	}
+	_, err = s.repository.Save(ctx, pet)
+	return err
 }
 
 func (s *petService) RestorePet(ctx context.Context, id PetID) error {

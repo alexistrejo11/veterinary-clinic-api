@@ -1,4 +1,4 @@
-.PHONY: help run migrate migrate-down sqlc swagger swagger-fmt build test tidy docker-up docker-up-full docker-down docker-build clean
+.PHONY: help run migrate migrate-down sqlc swagger swagger-fmt build test test-race vet tidy docker-up docker-up-full docker-down docker-build clean
 
 # -----------------------------------------------------------------------------
 # Defaults
@@ -29,6 +29,12 @@ build: ## Build API binary to bin/api
 
 test: ## Run all Go tests
 	$(GO) test ./...
+
+test-race: ## Run all Go tests with the race detector
+	$(GO) test -race ./...
+
+vet: ## Run Go static analysis
+	$(GO) vet ./...
 
 tidy: ## Tidy Go module dependencies
 	$(GO) mod tidy

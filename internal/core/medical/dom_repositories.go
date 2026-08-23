@@ -90,7 +90,7 @@ type SessionSurgeryRepository interface {
 type SessionPrescriptionRepository interface {
 	FindBySessionID(ctx context.Context, sessionID SessionID) ([]SessionPrescription, error)
 	FindByID(ctx context.Context, id PrescriptionID) (SessionPrescription, error)
-	FindActivePrescriptionsByPet(ctx context.Context, petID uint, p page.Pagination) (page.Page[SessionPrescription], error)
+	FindActivePrescriptionsByPet(ctx context.Context, petID uint, employeeIDs []uint, p page.Pagination) (page.Page[SessionPrescription], error)
 	Save(ctx context.Context, p SessionPrescription) (SessionPrescription, error)
 	DeleteByID(ctx context.Context, id PrescriptionID) error
 	DeleteBySessionID(ctx context.Context, sessionID SessionID) error

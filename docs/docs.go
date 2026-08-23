@@ -24,6 +24,272 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/addresses": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists addresses. Requires admin or receptionist role.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Search addresses",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/addresses/users/{user_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists addresses for a user. Requires admin or receptionist role.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "List user addresses",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates an address for a user. Requires admin or receptionist role.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Create user address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/addresses/users/{user_id}/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns an address for a user. Requires admin or receptionist role.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Get user address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an address for a user. Requires admin or receptionist role.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Update user address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Deletes an address for a user. Requires admin or receptionist role.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Delete user address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/appointments": {
             "get": {
                 "security": [
@@ -31,7 +297,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Paginated search of all appointments with filters. Requires admin or manager role.",
+                "description": "Paginated search of all appointments with filters. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -41,7 +307,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Search appointments (manager/admin)",
+                "summary": "Search appointments (receptionist/admin)",
                 "parameters": [
                     {
                         "description": "Search criteria and pagination",
@@ -101,7 +367,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new appointment, optionally assigned to an employee via query param. Requires admin or manager role.",
+                "description": "Creates a new appointment, optionally assigned to a veterinarian via query param. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -111,7 +377,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Create appointment (manager/admin)",
+                "summary": "Create appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -164,7 +430,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single appointment by ID. Requires admin or manager role.",
+                "description": "Returns a single appointment by ID. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -174,7 +440,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Get appointment by ID (manager/admin)",
+                "summary": "Get appointment by ID (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -235,7 +501,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates general info (reason, notes, service) of an appointment. Requires admin or manager role.",
+                "description": "Updates general info (reason, notes, service) of an appointment. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -245,7 +511,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Update appointment (manager/admin)",
+                "summary": "Update appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -303,7 +569,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Deletes an appointment. Soft-delete by default; pass hard=true for permanent deletion. Requires admin or manager role.",
+                "description": "Deletes an appointment. Soft-delete by default; pass hard=true for permanent deletion. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -313,7 +579,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Delete appointment (manager/admin)",
+                "summary": "Delete appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -371,7 +637,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancels an appointment, with optional employee and reason. Requires admin or manager role.",
+                "description": "Cancels an appointment, with optional veterinarian and reason. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -381,7 +647,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Cancel appointment (manager/admin)",
+                "summary": "Cancel appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -444,7 +710,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Marks an appointment as completed, with optional employee and notes. Requires admin or manager role.",
+                "description": "Marks an appointment as completed, with optional veterinarian and notes. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -454,7 +720,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Complete appointment (manager/admin)",
+                "summary": "Complete appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -517,7 +783,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Confirms an appointment and assigns the employee given in the query param. Requires admin or manager role.",
+                "description": "Confirms an appointment and assigns the veterinarian given in the query param. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -527,7 +793,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Confirm appointment (manager/admin)",
+                "summary": "Confirm appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -585,7 +851,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Marks an appointment as not attended, with optional employee. Requires admin or manager role.",
+                "description": "Marks an appointment as not attended, with optional veterinarian. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -595,7 +861,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Mark appointment as not attended (manager/admin)",
+                "summary": "Mark appointment as not attended (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -652,7 +918,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Reschedules an appointment to a new date/time. Requires admin or manager role.",
+                "description": "Reschedules an appointment to a new date/time. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -662,7 +928,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Reschedule appointment (manager/admin)",
+                "summary": "Reschedule appointment (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -762,7 +1028,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Enables 2FA for the authenticated user (method: totp, sms, or email). Requires Bearer auth.",
+                "description": "Enables TOTP 2FA for the authenticated user and returns recovery codes once. Requires Bearer auth.",
                 "consumes": [
                     "application/json"
                 ],
@@ -814,12 +1080,7 @@ const docTemplate = `{
         },
         "/auth/2fa/verify": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Completes login by verifying the two-factor code. Returns new session payload. Requires Bearer auth.",
+                "description": "Completes login using an opaque two-factor challenge and a TOTP or backup code.",
                 "consumes": [
                     "application/json"
                 ],
@@ -942,7 +1203,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, data contains dtos.RequiresTwoFactorResponse instead of the session.",
+                "description": "Authenticates with email and password. Returns an opaque challenge when TOTP verification is required.",
                 "consumes": [
                     "application/json"
                 ],
@@ -955,7 +1216,7 @@ const docTemplate = `{
                 "summary": "Login",
                 "parameters": [
                     {
-                        "description": "Email and password; optional two_factor_code",
+                        "description": "Email and password",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -1103,12 +1364,7 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Exchanges a valid refresh token for a new access token and refresh token. Requires Bearer auth.",
+                "description": "Exchanges a valid refresh token for a new access token and refresh token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1172,7 +1428,7 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Creates a new user account (admin, customer, or employee). Admins get immediate access; others may require activation.",
+                "description": "Creates a pending customer account and emails an activation code.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1218,12 +1474,7 @@ const docTemplate = `{
         },
         "/auth/reset-password/request": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Sends a password reset link/code to the given email. Requires Bearer auth.",
+                "description": "Sends a password reset code to the given email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1275,12 +1526,7 @@ const docTemplate = `{
         },
         "/auth/reset-password/reset": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Resets the user password using email and the code received by email. Requires Bearer auth.",
+                "description": "Resets the user password using email and the code received by email.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1337,7 +1583,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Paginated search/filter of customers. Requires admin or manager role.",
+                "description": "Paginated search/filter of customers. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1407,7 +1653,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new customer. Requires admin or manager role.",
+                "description": "Creates a new customer. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1464,7 +1710,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single customer by ID. Requires admin or manager role.",
+                "description": "Returns a single customer by ID. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1535,7 +1781,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates an existing customer by ID. Requires admin or manager role.",
+                "description": "Updates an existing customer by ID. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1590,7 +1836,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Soft-deletes a customer by ID. Requires admin or manager role.",
+                "description": "Soft-deletes a customer by ID. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1645,7 +1891,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated appointments for a given customer. Requires admin or manager role.",
+                "description": "Returns paginated appointments for a given customer. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1655,7 +1901,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Get appointments by customer (manager/admin)",
+                "summary": "Get appointments by customer (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1729,7 +1975,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Restores a soft-deleted customer. Requires admin or manager role.",
+                "description": "Restores a soft-deleted customer. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1784,7 +2030,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Paginated search/filter of employees. Requires admin or manager role.",
+                "description": "Paginated search/filter of employees. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1854,7 +2100,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new employee. Requires admin or manager role.",
+                "description": "Creates a new employee. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1911,7 +2157,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated appointments assigned to the authenticated employee. Requires employee or manager role.",
+                "description": "Returns paginated appointments assigned to the authenticated veterinarian. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1921,7 +2167,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Get my assigned appointments (employee)",
+                "summary": "Get my assigned appointments (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1973,61 +2219,6 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Creates an appointment assigned to the authenticated employee. Requires employee or manager role.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "appointments"
-                ],
-                "summary": "Create appointment (employee)",
-                "parameters": [
-                    {
-                        "description": "Appointment data",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AppointmentCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Appointment created (data contains new appointment ID)",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    }
-                }
             }
         },
         "/employees/appointments/{id}": {
@@ -2037,7 +2228,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "description": "Returns a single appointment assigned to the authenticated veterinarian. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2047,7 +2238,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Get my assigned appointment by ID (employee)",
+                "summary": "Get my assigned appointment by ID (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2108,7 +2299,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates general info (reason, notes, service) of an appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "description": "Updates general info (reason, notes, service) of an appointment assigned to the authenticated veterinarian. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2118,7 +2309,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Update my appointment (employee)",
+                "summary": "Update my appointment (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2178,7 +2369,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancels an appointment assigned to the authenticated employee. Requires employee or manager role.",
+                "description": "Cancels an appointment assigned to the authenticated veterinarian. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2188,7 +2379,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Cancel my appointment (employee)",
+                "summary": "Cancel my appointment (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2245,7 +2436,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Marks an appointment assigned to the authenticated employee as completed. Requires employee or manager role.",
+                "description": "Marks an appointment assigned to the authenticated veterinarian as completed. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2255,7 +2446,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Complete my appointment (employee)",
+                "summary": "Complete my appointment (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2305,67 +2496,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/employees/appointments/{id}/confirm": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Confirms an appointment assigned to the authenticated employee. Requires employee or manager role.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "appointments"
-                ],
-                "summary": "Confirm my appointment (employee)",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "Appointment ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Appointment confirmed",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid ID",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Appointment not found",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/employees/appointments/{id}/not-attend": {
             "post": {
                 "security": [
@@ -2373,7 +2503,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Marks an appointment assigned to the authenticated employee as not attended. Requires employee or manager role.",
+                "description": "Marks an appointment assigned to the authenticated veterinarian as not attended. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2383,7 +2513,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Mark my appointment as not attended (employee)",
+                "summary": "Mark my appointment as not attended (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2434,7 +2564,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Reschedules an appointment assigned to the authenticated employee to a new date/time. Requires employee or manager role.",
+                "description": "Reschedules an appointment assigned to the authenticated veterinarian to a new date/time. Requires veterinarian role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2444,7 +2574,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Reschedule my appointment (employee)",
+                "summary": "Reschedule my appointment (veterinarian)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2504,7 +2634,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single employee by ID. Requires admin or manager role.",
+                "description": "Returns a single employee by ID. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2575,7 +2705,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates an existing employee by ID. Requires admin or manager role.",
+                "description": "Updates an existing employee by ID. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2630,7 +2760,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Soft-deletes an employee by ID. Requires admin or manager role.",
+                "description": "Soft-deletes an employee by ID. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2685,7 +2815,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated appointments for a given employee. Requires admin or manager role.",
+                "description": "Returns paginated appointments for a given employee. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2695,7 +2825,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Get appointments by employee (manager/admin)",
+                "summary": "Get appointments by employee (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -2769,7 +2899,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Restores a soft-deleted employee. Requires admin or manager role.",
+                "description": "Restores a soft-deleted employee. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2817,25 +2947,175 @@ const docTemplate = `{
                 }
             }
         },
-        "/health": {
+        "/me/addresses": {
             "get": {
-                "description": "Check if the API is running",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
                 "tags": [
-                    "health"
+                    "addresses"
                 ],
-                "summary": "Health Check",
+                "summary": "List my addresses",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Create my address",
+                "parameters": [
+                    {
+                        "description": "Address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/addresses/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns an address belonging to the authenticated user.",
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Get my address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Update my address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Address",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "addresses"
+                ],
+                "summary": "Delete my address",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Address ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
                     }
                 }
@@ -3040,6 +3320,287 @@ const docTemplate = `{
                 }
             }
         },
+        "/me/appointments/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels a cancellable appointment belonging to the authenticated customer. Requires customer role.",
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Cancel my appointment (customer)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Appointment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cancellation reason",
+                        "name": "reason",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Appointment cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid ID or appointment cannot be cancelled",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Appointment not found",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/pets/{pet_id}/prescriptions/active": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List my pet active prescriptions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/pets/{pet_id}/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List my pet medical sessions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/pets/{pet_id}/vaccination-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List my pet vaccination history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Vaccine ID",
+                        "name": "vaccine_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date",
+                        "name": "date_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date",
+                        "name": "date_to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/pets/{pet_id}/vaccination-summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get my pet vaccination summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List my medical sessions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/sessions/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get my medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/medical/sessions/{id}/full": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get my full medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/me/notifications": {
             "get": {
                 "security": [
@@ -3184,6 +3745,1703 @@ const docTemplate = `{
                 }
             }
         },
+        "/me/payments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Lists payments belonging to the authenticated customer. Requires customer role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "List my payments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/me/payments/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns a payment belonging to the authenticated customer. Requires customer role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get my payment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/me/pets": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "List my pets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Create my pet",
+                "parameters": [
+                    {
+                        "description": "Pet",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/me/pets/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Get my pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Update my pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Pet",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires customer role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Delete my pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/attachments": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Add attachment",
+                "parameters": [
+                    {
+                        "description": "Attachment",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddAttachmentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/attachments/{attachment_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Remove attachment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Attachment ID",
+                        "name": "attachment_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/medications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List medication catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Create medication catalog entry",
+                "parameters": [
+                    {
+                        "description": "Medication",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateMedicationCatalogRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/medications/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Search medication catalog",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search term",
+                        "name": "term",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/medications/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get medication catalog entry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Medication ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Deactivate medication catalog entry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Medication ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List service catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Create service catalog entry",
+                "parameters": [
+                    {
+                        "description": "Service",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateServiceCatalogRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/services/category/{category}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List services by category",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Service category",
+                        "name": "category",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/services/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get service catalog entry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Deactivate service catalog entry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Service ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/vaccines": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List vaccine catalog",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Create vaccine catalog entry",
+                "parameters": [
+                    {
+                        "description": "Vaccine",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateVaccineCatalogRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/vaccines/species/{species}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List vaccines by species",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Species",
+                        "name": "species",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/catalogs/vaccines/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get vaccine catalog entry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vaccine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Deactivate vaccine catalog entry",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vaccine ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/customers/{customer_id}/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires veterinarian or admin role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List customer medical sessions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "customer_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/pets/{pet_id}/prescriptions/active": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List active pet prescriptions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/pets/{pet_id}/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires veterinarian or admin role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List pet medical sessions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/pets/{pet_id}/vaccination-summary": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get pet vaccination summary",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/prescriptions": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Add prescription",
+                "parameters": [
+                    {
+                        "description": "Prescription",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddPrescriptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/prescriptions/{prescription_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Update prescription",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Prescription ID",
+                        "name": "prescription_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Prescription",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePrescriptionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Remove prescription",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Prescription ID",
+                        "name": "prescription_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/session-services": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Add session service",
+                "parameters": [
+                    {
+                        "description": "Session service",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSessionServiceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/session-services/{session_service_id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Remove session service",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session service ID",
+                        "name": "session_service_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires veterinarian or admin role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Search medical sessions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "customer_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Employee ID",
+                        "name": "employee_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Create medical session",
+                "parameters": [
+                    {
+                        "description": "Session",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/stats": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires veterinarian or admin role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get medical session statistics",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires veterinarian or admin role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Update medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Session",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSessionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Delete medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/attachments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List session attachments",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/full": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires veterinarian or admin role.",
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Get full medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/hard": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Permanently delete medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/prescriptions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List session prescriptions",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Restore medical session",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List session services",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/surgeries": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List session surgeries",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/sessions/{id}/vaccinations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "List session vaccinations",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Session ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/surgeries": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Add surgery",
+                "parameters": [
+                    {
+                        "description": "Surgery",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSurgeryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/surgeries/{surgery_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Update surgery",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Surgery ID",
+                        "name": "surgery_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Surgery",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSurgeryRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Remove surgery",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Surgery ID",
+                        "name": "surgery_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/vaccination-history": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Search vaccination history",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "pet_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Vaccine ID",
+                        "name": "vaccine_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/vaccinations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Add vaccination",
+                "parameters": [
+                    {
+                        "description": "Vaccination",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddVaccinationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/medical/vaccinations/{vaccination_id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Update vaccination",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vaccination ID",
+                        "name": "vaccination_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Vaccination",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateVaccinationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "medical"
+                ],
+                "summary": "Remove vaccination",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Vaccination ID",
+                        "name": "vaccination_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/notifications": {
             "post": {
                 "security": [
@@ -3191,7 +5449,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Manually sends a notification through the given channel (email, sms). Requires employee, manager, or admin role.",
+                "description": "Manually sends a notification through the given channel (email, sms). Requires veterinarian, receptionist, or admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3248,7 +5506,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated notifications filtered by delivery channel (email, sms). Requires employee, manager, or admin role.",
+                "description": "Returns paginated notifications filtered by delivery channel (email, sms). Requires veterinarian, receptionist, or admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3332,7 +5590,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a summary of sent notifications, optionally filtered by sender. Requires employee, manager, or admin role.",
+                "description": "Returns a summary of sent notifications, optionally filtered by sender. Requires veterinarian, receptionist, or admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3395,7 +5653,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated notifications filtered by type. Requires employee, manager, or admin role.",
+                "description": "Returns paginated notifications filtered by type. Requires veterinarian, receptionist, or admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3479,7 +5737,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single notification by ID. Requires employee, manager, or admin role.",
+                "description": "Returns a single notification by ID. Requires veterinarian, receptionist, or admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3534,6 +5792,177 @@ const docTemplate = `{
                         "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Search payments",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Create payment",
+                "parameters": [
+                    {
+                        "description": "Payment",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/customers/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "List customer payments",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/reference/{reference}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get payment by reference",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payment reference",
+                        "name": "reference",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -3610,6 +6039,454 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Update payment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payment",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Delete payment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/{id}/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Cancel payment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Cancellation reason",
+                        "name": "reason",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/{id}/process": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Process payment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Processing reason",
+                        "name": "reason",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/{id}/refund": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Refund payment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Refund reason",
+                        "name": "reason",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pets": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Search pets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "/pets/customers/{customer_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "List customer pets",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "customer_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page_number",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Create customer pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Customer ID",
+                        "name": "customer_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Whether the pet is active",
+                        "name": "is_active",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Pet",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pets/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Get pet by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Update pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Pet",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role. Set hard to permanently delete.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Delete pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Permanently delete",
+                        "name": "hard",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
             }
         },
         "/pets/{id}/appointments": {
@@ -3619,7 +6496,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns paginated appointments for a given pet. Requires admin or manager role.",
+                "description": "Returns paginated appointments for a given pet. Requires admin or receptionist role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3629,7 +6506,7 @@ const docTemplate = `{
                 "tags": [
                     "appointments"
                 ],
-                "summary": "Get appointments by pet (manager/admin)",
+                "summary": "Get appointments by pet (receptionist/admin)",
                 "parameters": [
                     {
                         "type": "integer",
@@ -3689,6 +6566,37 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/pets/{id}/restore": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Requires admin or receptionist role.",
+                "tags": [
+                    "pets"
+                ],
+                "summary": "Restore pet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Pet ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/clinic-vet-api_internal_shared_http.APIResponse"
                         }
@@ -3810,7 +6718,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Paginated search and filter of users. Requires admin or manager role.",
+                "description": "Paginated search and filter of users. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3903,7 +6811,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new user. Requires admin or manager role.",
+                "description": "Creates a new user. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -3960,7 +6868,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns a single user by ID. Requires admin or manager role.",
+                "description": "Returns a single user by ID. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4031,7 +6939,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Soft-deletes a user by ID. Requires admin or manager role.",
+                "description": "Soft-deletes a user by ID. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4086,7 +6994,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Restores a soft-deleted user. Requires admin or manager role.",
+                "description": "Restores a soft-deleted user. Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4141,7 +7049,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates the status of a user (e.g. activate/deactivate). Requires admin or manager role.",
+                "description": "Updates the status of a user (e.g. activate/deactivate). Requires admin role.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4215,6 +7123,281 @@ const docTemplate = `{
                 "user_id": {
                     "type": "string",
                     "maxLength": 20
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddAttachmentRequest": {
+            "description": "Session ID, file_type, file_url, optional description, uploaded_by.",
+            "type": "object",
+            "required": [
+                "file_type",
+                "file_url",
+                "session_id"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "file_type": {
+                    "type": "string"
+                },
+                "file_url": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "integer"
+                },
+                "uploaded_by": {
+                    "type": "integer"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddPrescriptionRequest": {
+            "description": "Session ID, medication ID, dosage, frequency, start_date, optional duration_days, route, instructions.",
+            "type": "object",
+            "required": [
+                "dosage",
+                "frequency",
+                "medication_id",
+                "session_id",
+                "start_date"
+            ],
+            "properties": {
+                "dosage": {
+                    "type": "string"
+                },
+                "duration_days": {
+                    "type": "integer"
+                },
+                "frequency": {
+                    "type": "string"
+                },
+                "instructions": {
+                    "type": "string"
+                },
+                "medication_id": {
+                    "type": "integer"
+                },
+                "route": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "description": "RFC3339",
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSessionServiceRequest": {
+            "description": "Session ID, service catalog ID, quantity, optional price_applied, notes.",
+            "type": "object",
+            "required": [
+                "quantity",
+                "service_catalog_id",
+                "session_id"
+            ],
+            "properties": {
+                "notes": {
+                    "type": "string"
+                },
+                "price_applied": {
+                    "type": "number"
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "service_catalog_id": {
+                    "type": "integer"
+                },
+                "session_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddSurgeryRequest": {
+            "description": "Session ID, procedure name, outcome (required), optional anesthesia, pre/intra/post-op notes, duration, surgeon_id.",
+            "type": "object",
+            "required": [
+                "outcome",
+                "procedure_name",
+                "session_id"
+            ],
+            "properties": {
+                "anesthesia_agent": {
+                    "type": "string"
+                },
+                "anesthesia_type": {
+                    "type": "string"
+                },
+                "duration_minutes": {
+                    "type": "integer"
+                },
+                "intra_op_notes": {
+                    "type": "string"
+                },
+                "outcome": {
+                    "type": "string"
+                },
+                "post_op_notes": {
+                    "type": "string"
+                },
+                "pre_op_notes": {
+                    "type": "string"
+                },
+                "procedure_name": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "integer"
+                },
+                "surgeon_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddVaccinationRequest": {
+            "description": "Session ID, vaccine catalog ID, dose number, optional batch, expiration, site, next dose date, reaction notes, administered_by.",
+            "type": "object",
+            "required": [
+                "dose_number",
+                "session_id",
+                "vaccine_catalog_id"
+            ],
+            "properties": {
+                "administered_by": {
+                    "type": "integer"
+                },
+                "batch_number": {
+                    "type": "string"
+                },
+                "dose_number": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "expiration_date": {
+                    "type": "string"
+                },
+                "next_dose_date": {
+                    "type": "string"
+                },
+                "reaction_notes": {
+                    "type": "string"
+                },
+                "session_id": {
+                    "type": "integer"
+                },
+                "site_of_injection": {
+                    "type": "string"
+                },
+                "vaccine_catalog_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressCreateRequest": {
+            "description": "Street, city, state, zip, country, building type/numbers, and whether it is the default address.",
+            "type": "object",
+            "properties": {
+                "building_inner_number": {
+                    "type": "string"
+                },
+                "building_outer_number": {
+                    "type": "string"
+                },
+                "building_type": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "street": {
+                    "type": "string"
+                },
+                "zip_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressResponse": {
+            "description": "Address entity: id, street, city, state, zip, country, building details, is_default.",
+            "type": "object",
+            "properties": {
+                "building_inner_number": {
+                    "type": "string"
+                },
+                "building_outer_number": {
+                    "type": "string"
+                },
+                "building_type": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "street": {
+                    "type": "string"
+                },
+                "zip_code": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.AddressUpdateRequest": {
+            "description": "Optional fields to update; only provided fields are changed.",
+            "type": "object",
+            "properties": {
+                "building_inner_number": {
+                    "type": "string"
+                },
+                "building_outer_number": {
+                    "type": "string"
+                },
+                "building_type": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "street": {
+                    "type": "string"
+                },
+                "zip_code": {
+                    "type": "string"
                 }
             }
         },
@@ -4420,6 +7603,134 @@ const docTemplate = `{
                 }
             }
         },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateMedicationCatalogRequest": {
+            "description": "Name, optional active_ingredient, presentation, unit, requires_prescription, species_warnings.",
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "active_ingredient": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "presentation": {
+                    "type": "string"
+                },
+                "requires_prescription": {
+                    "type": "boolean"
+                },
+                "species_warnings": {
+                    "type": "string"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateServiceCatalogRequest": {
+            "description": "Name, category, optional description, base_price, duration_minutes, requires_fasting.",
+            "type": "object",
+            "required": [
+                "category",
+                "name"
+            ],
+            "properties": {
+                "base_price": {
+                    "type": "number"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "duration_minutes": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "requires_fasting": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateSessionRequest": {
+            "description": "Pet, customer, employee, optional appointment, clinic service, visit type/date, optional vitals (weight, temp, heart/resp rate), symptoms, diagnosis, treatment, notes, medications, follow-up date.",
+            "type": "object",
+            "required": [
+                "clinic_service",
+                "customer_id",
+                "employee_id",
+                "pet_id",
+                "visit_date",
+                "visit_type"
+            ],
+            "properties": {
+                "appointment_id": {
+                    "type": "integer"
+                },
+                "clinic_service": {
+                    "type": "string"
+                },
+                "condition": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "integer"
+                },
+                "diagnosis": {
+                    "type": "string"
+                },
+                "employee_id": {
+                    "type": "integer"
+                },
+                "follow_up_date": {
+                    "description": "RFC3339",
+                    "type": "string"
+                },
+                "heart_rate": {
+                    "type": "integer"
+                },
+                "is_emergency": {
+                    "type": "boolean"
+                },
+                "medications": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "pet_id": {
+                    "type": "integer"
+                },
+                "respiratory_rate": {
+                    "type": "integer"
+                },
+                "symptoms": {
+                    "type": "string"
+                },
+                "temperature_c": {
+                    "type": "number"
+                },
+                "treatment": {
+                    "type": "string"
+                },
+                "visit_date": {
+                    "description": "RFC3339",
+                    "type": "string"
+                },
+                "visit_type": {
+                    "type": "string"
+                },
+                "weight_kg": {
+                    "type": "number"
+                }
+            }
+        },
         "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateUserRequest": {
             "description": "Request body for creating a new user account",
             "type": "object",
@@ -4474,6 +7785,41 @@ const docTemplate = `{
                         "pending"
                     ],
                     "example": "active"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.CreateVaccineCatalogRequest": {
+            "description": "Name, optional manufacturer, species, disease_target, total_doses, schedule_days, notes.",
+            "type": "object",
+            "required": [
+                "name",
+                "total_doses"
+            ],
+            "properties": {
+                "disease_target": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "schedule_days": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "species": {
+                    "type": "string"
+                },
+                "total_doses": {
+                    "type": "integer",
+                    "minimum": 1
                 }
             }
         },
@@ -4854,19 +8200,14 @@ const docTemplate = `{
             }
         },
         "clinic-vet-api_internal_infrastructure_http_handlers_dtos.EnableTwoFactorRequest": {
-            "description": "2FA method: totp, sms, or email.",
+            "description": "2FA method: totp.",
             "type": "object",
             "required": [
                 "method"
             ],
             "properties": {
                 "method": {
-                    "type": "string",
-                    "enum": [
-                        "totp",
-                        "sms",
-                        "email"
-                    ]
+                    "type": "string"
                 }
             }
         },
@@ -4885,10 +8226,6 @@ const docTemplate = `{
                 "password": {
                     "type": "string",
                     "maxLength": 128
-                },
-                "two_factor_code": {
-                    "type": "string",
-                    "maxLength": 16
                 }
             }
         },
@@ -4909,6 +8246,9 @@ const docTemplate = `{
             "description": "Notification entity: id, user_id, user_email, user_phone, title, subject, message, type, channel, created_at.",
             "type": "object",
             "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
                 "channel": {
                     "description": "Delivery channel (email, sms)",
                     "type": "string",
@@ -4919,6 +8259,9 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2024-01-01T00:00:00Z"
                 },
+                "failure_message": {
+                    "type": "string"
+                },
                 "id": {
                     "description": "Unique identifier of the notification",
                     "type": "string",
@@ -4928,6 +8271,16 @@ const docTemplate = `{
                     "description": "Notification message body",
                     "type": "string",
                     "example": "Don't forget your appointment at 10:00."
+                },
+                "provider_reference": {
+                    "type": "string"
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "sent"
                 },
                 "subject": {
                     "description": "Notification subject",
@@ -4961,8 +8314,55 @@ const docTemplate = `{
                 }
             }
         },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentCreateRequest": {
+            "description": "Creates an authorized internal ledger entry. Reference is the caller's idempotency key; this API never sends a payment to an external processor.",
+            "type": "object",
+            "required": [
+                "amount",
+                "currency",
+                "customer_id",
+                "method",
+                "reference"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "appointment_id": {
+                    "type": "integer"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "description": "Relations",
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "due_date": {
+                    "type": "string"
+                },
+                "invoice_id": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string",
+                    "maxLength": 1000
+                },
+                "reference": {
+                    "type": "string",
+                    "maxLength": 255
+                }
+            }
+        },
         "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentResponse": {
-            "description": "Payment entity: id, amount, currency, status, method, transaction_id, description, due_date, paid_at, customer_id, timestamps, optional refund/delete info.",
+            "description": "Internal ledger payment with caller reference and locally issued receipt number once settled.",
             "type": "object",
             "properties": {
                 "amount": {
@@ -5007,6 +8407,15 @@ const docTemplate = `{
                 "paid_at": {
                     "type": "string"
                 },
+                "reason": {
+                    "type": "string"
+                },
+                "receipt_number": {
+                    "type": "string"
+                },
+                "reference": {
+                    "type": "string"
+                },
                 "refund_amount": {
                     "type": "number"
                 },
@@ -5019,10 +8428,239 @@ const docTemplate = `{
                 "status_display": {
                     "type": "string"
                 },
-                "transaction_id": {
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PaymentUpdateRequest": {
+            "description": "All fields optional; only provided fields are updated (amount, currency, method, description, due_date, invoice_id).",
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500
+                },
+                "due_date": {
+                    "type": "string"
+                },
+                "invoice_id": {
+                    "type": "string"
+                },
+                "method": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetCreateRequest": {
+            "description": "Name, species, gender, optional breed/age/color/microchip/medical info, customer_id, optional emergency contact.",
+            "type": "object",
+            "required": [
+                "customer_id",
+                "gender",
+                "name",
+                "species"
+            ],
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "allergies": {
+                    "type": "string"
+                },
+                "behavioral_notes": {
+                    "type": "string"
+                },
+                "blood_type": {
+                    "type": "string"
+                },
+                "breed": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "current_medications": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "integer"
+                },
+                "emergency_contact_name": {
+                    "type": "string"
+                },
+                "emergency_contact_phone": {
+                    "type": "string"
+                },
+                "feeding_instructions": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "is_neutered": {
+                    "type": "boolean"
+                },
+                "microchip_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "special_needs": {
+                    "type": "string"
+                },
+                "species": {
+                    "type": "string"
+                },
+                "veterinary_contact": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetResponse": {
+            "description": "Pet entity: id, name, species, gender, customer_id, is_active, optional medical/contact fields, timestamps.",
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "allergies": {
+                    "type": "string"
+                },
+                "behavioral_notes": {
+                    "type": "string"
+                },
+                "blood_type": {
+                    "type": "string"
+                },
+                "breed": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "current_medications": {
+                    "type": "string"
+                },
+                "customer_id": {
+                    "type": "integer"
+                },
+                "emergency_contact_name": {
+                    "type": "string"
+                },
+                "emergency_contact_phone": {
+                    "type": "string"
+                },
+                "feeding_instructions": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_neutered": {
+                    "type": "boolean"
+                },
+                "microchip_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "special_needs": {
+                    "type": "string"
+                },
+                "species": {
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "veterinary_contact": {
+                    "type": "string"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.PetUpdateRequest": {
+            "description": "Optional fields to update; only provided fields are changed. Includes is_active for soft-delete.",
+            "type": "object",
+            "properties": {
+                "age": {
+                    "type": "integer"
+                },
+                "allergies": {
+                    "type": "string"
+                },
+                "behavioral_notes": {
+                    "type": "string"
+                },
+                "blood_type": {
+                    "type": "string"
+                },
+                "breed": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "current_medications": {
+                    "type": "string"
+                },
+                "emergency_contact_name": {
+                    "type": "string"
+                },
+                "emergency_contact_phone": {
+                    "type": "string"
+                },
+                "feeding_instructions": {
+                    "type": "string"
+                },
+                "gender": {
+                    "type": "string"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "is_neutered": {
+                    "type": "boolean"
+                },
+                "microchip_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo": {
+                    "type": "string"
+                },
+                "special_needs": {
+                    "type": "string"
+                },
+                "species": {
+                    "type": "string"
+                },
+                "veterinary_contact": {
                     "type": "string"
                 }
             }
@@ -5109,21 +8747,20 @@ const docTemplate = `{
             }
         },
         "clinic-vet-api_internal_infrastructure_http_handlers_dtos.RegisterRequest": {
-            "description": "Request body for user registration. Role: admin, veterinarian, customer, or receptionist. Admins get immediate access; others may require activation.",
+            "description": "Request body for public customer registration.",
             "type": "object",
             "required": [
+                "date_of_birth",
                 "email",
+                "first_name",
+                "gender",
+                "last_name",
                 "password",
                 "role"
             ],
             "properties": {
-                "bio": {
-                    "type": "string",
-                    "maxLength": 500
-                },
                 "date_of_birth": {
-                    "type": "string",
-                    "maxLength": 20
+                    "type": "string"
                 },
                 "email": {
                     "type": "string",
@@ -5133,17 +8770,26 @@ const docTemplate = `{
                 "employee_id": {
                     "type": "integer"
                 },
+                "first_name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
                 "gender": {
                     "type": "string",
-                    "maxLength": 20
+                    "enum": [
+                        "male",
+                        "female",
+                        "other",
+                        "not_specified"
+                    ]
+                },
+                "last_name": {
+                    "type": "string",
+                    "maxLength": 100
                 },
                 "license_number": {
                     "type": "string",
                     "maxLength": 100
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 200
                 },
                 "password": {
                     "type": "string",
@@ -5161,12 +8807,6 @@ const docTemplate = `{
                 },
                 "role": {
                     "type": "string",
-                    "enum": [
-                        "admin",
-                        "veterinarian",
-                        "customer",
-                        "receptionist"
-                    ],
                     "example": "customer"
                 }
             }
@@ -5303,6 +8943,27 @@ const docTemplate = `{
                 }
             }
         },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePrescriptionRequest": {
+            "description": "Optional dosage, frequency, duration_days, route, instructions.",
+            "type": "object",
+            "properties": {
+                "dosage": {
+                    "type": "string"
+                },
+                "duration_days": {
+                    "type": "integer"
+                },
+                "frequency": {
+                    "type": "string"
+                },
+                "instructions": {
+                    "type": "string"
+                },
+                "route": {
+                    "type": "string"
+                }
+            }
+        },
         "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateProfileRequest": {
             "description": "Authenticated user's profile fields to update (name, gender, date of birth, photo URL, bio).",
             "type": "object",
@@ -5331,6 +8992,90 @@ const docTemplate = `{
                 }
             }
         },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSessionRequest": {
+            "description": "Optional fields to update; only provided fields are changed.",
+            "type": "object",
+            "properties": {
+                "appointment_id": {
+                    "type": "integer"
+                },
+                "clinic_service": {
+                    "type": "string"
+                },
+                "condition": {
+                    "type": "string"
+                },
+                "diagnosis": {
+                    "type": "string"
+                },
+                "employee_id": {
+                    "type": "integer"
+                },
+                "follow_up_date": {
+                    "type": "string"
+                },
+                "heart_rate": {
+                    "type": "integer"
+                },
+                "is_emergency": {
+                    "type": "boolean"
+                },
+                "medications": {
+                    "type": "string"
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "respiratory_rate": {
+                    "type": "integer"
+                },
+                "symptoms": {
+                    "type": "string"
+                },
+                "temperature_c": {
+                    "type": "number"
+                },
+                "treatment": {
+                    "type": "string"
+                },
+                "visit_date": {
+                    "type": "string"
+                },
+                "visit_type": {
+                    "type": "string"
+                },
+                "weight_kg": {
+                    "type": "number"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateSurgeryRequest": {
+            "description": "Optional anesthesia, notes, duration, outcome.",
+            "type": "object",
+            "properties": {
+                "anesthesia_agent": {
+                    "type": "string"
+                },
+                "anesthesia_type": {
+                    "type": "string"
+                },
+                "duration_minutes": {
+                    "type": "integer"
+                },
+                "intra_op_notes": {
+                    "type": "string"
+                },
+                "outcome": {
+                    "type": "string"
+                },
+                "post_op_notes": {
+                    "type": "string"
+                },
+                "pre_op_notes": {
+                    "type": "string"
+                }
+            }
+        },
         "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateUserStatusRequest": {
             "description": "Request body for updating user account status",
             "type": "object",
@@ -5347,6 +9092,24 @@ const docTemplate = `{
                         "banned"
                     ],
                     "example": "active"
+                }
+            }
+        },
+        "clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdateVaccinationRequest": {
+            "description": "Optional batch_number, site_of_injection, next_dose_date, reaction_notes.",
+            "type": "object",
+            "properties": {
+                "batch_number": {
+                    "type": "string"
+                },
+                "next_dose_date": {
+                    "type": "string"
+                },
+                "reaction_notes": {
+                    "type": "string"
+                },
+                "site_of_injection": {
+                    "type": "string"
                 }
             }
         },
@@ -5448,9 +9211,14 @@ const docTemplate = `{
             "description": "One-time 2FA code (TOTP or backup code).",
             "type": "object",
             "required": [
+                "challenge_token",
                 "two_factor_code"
             ],
             "properties": {
+                "challenge_token": {
+                    "type": "string",
+                    "maxLength": 64
+                },
                 "two_factor_code": {
                     "type": "string",
                     "maxLength": 16

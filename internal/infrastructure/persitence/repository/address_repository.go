@@ -211,7 +211,23 @@ func (r *AddressSqlcRepository) update(
 	if err != nil {
 		return addresses.Address{}, r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAddress, address.ID.Value()), err)
 	}
-	return r.toEntity(updated), nil
+	return r.toEntity(sqlc.Address{
+		ID:                  updated.ID,
+		UserID:              updated.UserID,
+		Street:              updated.Street,
+		City:                updated.City,
+		State:               updated.State,
+		ZipCode:             updated.ZipCode,
+		Country:             updated.Country,
+		BuildingType:        updated.BuildingType,
+		BuildingOuterNumber: updated.BuildingOuterNumber,
+		BuildingInnerNumber: updated.BuildingInnerNumber,
+		IsDefault:           updated.IsDefault,
+		CreatedAt:           updated.CreatedAt,
+		UpdatedAt:           updated.UpdatedAt,
+		DeletedAt:           updated.DeletedAt,
+		Version:             updated.Version,
+	}), nil
 }
 
 func (r *AddressSqlcRepository) toEntity(row sqlc.Address) addresses.Address {

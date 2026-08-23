@@ -3,6 +3,7 @@ package users
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"clinic-vet-api/internal/core/customers"
@@ -177,14 +178,17 @@ func (u *User) RecordLogin() error {
 // EnableTwoFactorAuth enables two-factor authentication for the user
 func (u *User) EnableTwoFactorAuth(method, secret string, backupCodes []string) error {
 	now := time.Now()
-	twoFAMethod := shared.TwoFactorMethod(secret)
+	twoFAMethod := shared.TwoFactorMethod(method)
+	if !twoFAMethod.IsValid() || twoFAMethod == shared.TwoFactorMethodBackup {
+		return errors.New("invalid two-factor authentication method")
+	}
 
 	twoFA := shared.NewTwoFactorAuth(
 		true,
 		twoFAMethod,
 		secret,
 		backupCodes,
-		&now,
+		nil,
 		&now,
 	)
 	u.TwoFactorAuth = twoFA

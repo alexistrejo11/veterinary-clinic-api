@@ -1,13 +1,13 @@
 -- name: FindAppointmentsBySpec :many
 SELECT 
-    id, clinic_service, scheduled_date, status, notes,
+    id, clinic_service, scheduled_date, status, reason, notes, cancellation_reason,
     customer_id, employee_id, pet_id, created_at, updated_at
-FROM appointments 
+FROM appointments
 WHERE 
-    ($1::INT IS NULL OR id = $1)
-    AND ($2::INT IS NULL OR customer_id = $2)
-    AND ($3::INT IS NULL OR employee_id = $3)
-    AND ($4::INT IS NULL OR pet_id = $4)
+    ($1 = 0 OR id = $1)
+    AND ($2 = 0 OR customer_id = $2)
+    AND ($3 = 0 OR employee_id = $3)
+    AND ($4 = 0 OR pet_id = $4)
     AND (
         $5::TEXT IS NULL OR 
         $5::TEXT = '' OR 
@@ -21,6 +21,7 @@ WHERE
     AND ($7::timestamp IS NULL OR scheduled_date >= $7)
     AND ($8::timestamp IS NULL OR scheduled_date <= $8)
     AND ($9::timestamp IS NULL OR scheduled_date = $9)
+    AND deleted_at IS NULL
 ORDER BY scheduled_date DESC
 LIMIT $10 OFFSET $11;
 
@@ -28,10 +29,10 @@ LIMIT $10 OFFSET $11;
 SELECT COUNT(*) 
 FROM appointments 
 WHERE 
-    ($1::INT IS NULL OR id = $1)
-    AND ($2::INT IS NULL OR customer_id = $2)
-    AND ($3::INT IS NULL OR employee_id = $3)
-    AND ($4::INT IS NULL OR pet_id = $4)
+    ($1 = 0 OR id = $1)
+    AND ($2 = 0 OR customer_id = $2)
+    AND ($3 = 0 OR employee_id = $3)
+    AND ($4 = 0 OR pet_id = $4)
     AND (
         $5::TEXT IS NULL OR 
         $5::TEXT = '' OR 
@@ -44,23 +45,24 @@ WHERE
     )
     AND ($7::timestamp IS NULL OR scheduled_date >= $7)
     AND ($8::timestamp IS NULL OR scheduled_date <= $8)
-    AND ($9::timestamp IS NULL OR scheduled_date = $9);
+    AND ($9::timestamp IS NULL OR scheduled_date = $9)
+    AND deleted_at IS NULL;
 
 
 
 -- name: FindAppointmentByID :one
-SELECT * FROM appointments 
+SELECT * FROM appointments
 WHERE id = $1 
 AND deleted_at IS NULL;
 
 -- name: FindAppointmentByIDAndCustomerID :one
-SELECT * FROM appointments 
+SELECT * FROM appointments
 WHERE id = $1 
 AND customer_id = $2
 AND deleted_at IS NULL;
 
 -- name: FindAppointmentByIDAndEmployeeID :one
-SELECT * FROM appointments 
+SELECT * FROM appointments
 WHERE id = $1 
 AND employee_id = $2
 AND deleted_at IS NULL;
@@ -70,7 +72,9 @@ INSERT INTO appointments (
     clinic_service, 
     scheduled_date, 
     status, 
+    reason,
     notes, 
+    cancellation_reason,
     customer_id, 
     employee_id,
     pet_id,
@@ -78,7 +82,7 @@ INSERT INTO appointments (
     updated_at,
     deleted_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL
 ) RETURNING *;
 
 -- name: UpdateAppointment :one
@@ -86,10 +90,12 @@ UPDATE appointments SET
     clinic_service = $2,
     scheduled_date = $3,
     status = $4,
-    notes = $5,
-    customer_id = $6,
-    employee_id = $7,
-    pet_id = $8,
+    reason = $5,
+    notes = $6,
+    cancellation_reason = $7,
+    customer_id = $8,
+    employee_id = $9,
+    pet_id = $10,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING *;

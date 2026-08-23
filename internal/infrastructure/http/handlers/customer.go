@@ -5,6 +5,7 @@ import (
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
 	"clinic-vet-api/internal/shared/http"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -17,12 +18,12 @@ type CustomerHandler struct {
 }
 
 func NewCustomerHandler(service customers.CustomerService, validator *validator.Validate) *CustomerHandler {
-	return &CustomerHandler{service: service, validator: validator}
+	return &CustomerHandler{service: service, validator: validator, mapper: mappers.NewCustomerMapper()}
 }
 
 // GetCustomerByID godoc
 // @Summary      Get customer by ID
-// @Description  Returns a single customer by ID. Requires admin or manager role.
+// @Description  Returns a single customer by ID. Requires admin or receptionist role.
 // @Tags         customers
 // @Accept       json
 // @Produce      json
@@ -54,7 +55,7 @@ func (s *CustomerHandler) GetCustomerByID(c *gin.Context) {
 
 // SearchCustomers godoc
 // @Summary      Search customers
-// @Description  Paginated search/filter of customers. Requires admin or manager role.
+// @Description  Paginated search/filter of customers. Requires admin or receptionist role.
 // @Tags         customers
 // @Accept       json
 // @Produce      json
@@ -67,15 +68,23 @@ func (s *CustomerHandler) GetCustomerByID(c *gin.Context) {
 // @Router       /customers [get]
 func (s *CustomerHandler) SearchCustomers(c *gin.Context) {
 	var requestBodyData dtos.CustomerSearchRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
+	if err := http.ShouldBindAndValidateQuery(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
 		return
 	}
+	spec := s.mapper.RequestToSpecification(requestBodyData)
+	customerPage, err := s.service.GetCustomersBySpecification(c.Request.Context(), spec)
+	if err != nil {
+		http.ApplicationError(c, err)
+		return
+	}
+	responsePage := s.mapper.ToCustomerResponsePage(customerPage)
+	http.Paginated(c, &responsePage, "Customers")
 }
 
 // CreateCustomer godoc
 // @Summary      Create customer
-// @Description  Creates a new customer. Requires admin or manager role.
+// @Description  Creates a new customer. Requires admin or receptionist role.
 // @Tags         customers
 // @Accept       json
 // @Produce      json
@@ -110,7 +119,7 @@ func (s *CustomerHandler) CreateCustomer(c *gin.Context) {
 
 // UpdateCustomer godoc
 // @Summary      Update customer
-// @Description  Updates an existing customer by ID. Requires admin or manager role.
+// @Description  Updates an existing customer by ID. Requires admin or receptionist role.
 // @Tags         customers
 // @Accept       json
 // @Produce      json
@@ -122,9 +131,18 @@ func (s *CustomerHandler) CreateCustomer(c *gin.Context) {
 // @Failure      500    {object}  http.APIResponse           "Internal server error"
 // @Router       /customers/{id} [put]
 func (s *CustomerHandler) UpdateCustomer(c *gin.Context) {
+	pathID, err := http.ParseParamToUInt(c, "id")
+	if err != nil {
+		http.BadRequest(c, err)
+		return
+	}
 	var requestBodyData dtos.CustomerUpdateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
+		return
+	}
+	if requestBodyData.ID != pathID {
+		http.BadRequest(c, fmt.Errorf("body id must match path id"))
 		return
 	}
 
@@ -144,7 +162,7 @@ func (s *CustomerHandler) UpdateCustomer(c *gin.Context) {
 
 // DeleteCustomer godoc
 // @Summary      Delete customer
-// @Description  Soft-deletes a customer by ID. Requires admin or manager role.
+// @Description  Soft-deletes a customer by ID. Requires admin or receptionist role.
 // @Tags         customers
 // @Accept       json
 // @Produce      json
@@ -174,7 +192,7 @@ func (s *CustomerHandler) DeleteCustomer(c *gin.Context) {
 
 // RestoreCustomer godoc
 // @Summary      Restore customer
-// @Description  Restores a soft-deleted customer. Requires admin or manager role.
+// @Description  Restores a soft-deleted customer. Requires admin or receptionist role.
 // @Tags         customers
 // @Accept       json
 // @Produce      json

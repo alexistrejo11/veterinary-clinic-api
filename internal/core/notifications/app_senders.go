@@ -5,9 +5,9 @@ import (
 )
 
 type EmailSender interface {
-	Send(ctx context.Context, notification *Notification) error
+	Send(ctx context.Context, notification *Notification) (string, error)
 }
 
 type SMSender interface {
-	Send(ctx context.Context, notification *Notification) error
+	Send(ctx context.Context, notification *Notification) (string, error)
 }

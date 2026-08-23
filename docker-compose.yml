@@ -1,15 +1,14 @@
 name: clinic-vet-api
 
-# Two profiles:
-#   default -> just the API (standalone). Uses DATABASE_URL / REDIS_URL from .env
-#              as-is, so it talks to any external Postgres/Redis (localhost, RDS,
-#              Upstash, ElastiCache, ...).
-#   full    -> API + bundled Postgres + Redis. The API overrides DATABASE_URL and
-#              REDIS_URL to target the in-network service names.
+# Two mutually exclusive profiles (Compose never infers one named "default"):
+#   standalone -> just the API, using DATABASE_URL / REDIS_URL from .env
+#   full       -> API + bundled Postgres + Redis (URLs rewritten to service names)
 #
 # Usage:
-#   docker compose up --build                 # default profile (see COMPOSE_PROFILES in .env)
-#   docker compose --profile full up --build  # full stack
+#   docker compose up --build                      # standalone (COMPOSE_PROFILES in .env)
+#   COMPOSE_PROFILES=full docker compose up --build
+# Do not combine --profile full with COMPOSE_PROFILES=standalone: both API
+# services share the same container name and host port.
 
 # Shared API service config, reused by both the standalone and full-stack variants.
 x-api-base: &api-base
@@ -26,11 +25,11 @@ x-api-base: &api-base
     - vet_network
 
 services:
-  # --- default profile: standalone app against external URLs ---
+  # --- standalone: API against external URLs ---
   api:
     <<: *api-base
     container_name: clinic_vet_api
-    profiles: [default]
+    profiles: [standalone]
 
   # --- full profile: same app, but pointed at the bundled Postgres/Redis ---
   api-full:

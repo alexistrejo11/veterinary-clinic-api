@@ -9,13 +9,16 @@ import (
 
 // JWT claim keys used by TokenService implementations (e.g. JWT)
 const (
-	ClaimUserID    = "user_id"
-	ClaimEmail     = "email"
-	ClaimRole      = "role"
-	ClaimTokenType = "token_type"
-	ClaimExp       = "exp"
-	ClaimIat       = "iat"
-	ClaimJTI       = "jti"
+	ClaimUserID     = "user_id"
+	ClaimEmail      = "email"
+	ClaimRole       = "role"
+	ClaimTokenType  = "token_type"
+	ClaimExp        = "exp"
+	ClaimIat        = "iat"
+	ClaimJTI        = "jti"
+	ClaimDeviceInfo = "device_info"
+	ClaimUserAgent  = "user_agent"
+	ClaimIPAddress  = "ip_address"
 )
 
 // JWTAccessClaims holds standard claims for access tokens (role, email for authorization)
@@ -49,12 +52,13 @@ type JwtSession struct {
 type TokenType string
 
 const (
-	TokenTypeAccessToken  TokenType = "access_token"
-	TokenTypeRefreshToken TokenType = "refresh_token"
-	TokenTypeVerification  TokenType = "verification"
-	TokenTypePasswordReset TokenType = "password_reset"
-	TokenJwtAccessToken   TokenType = "jwt_access_token"
-	TokenJwtRefreshToken  TokenType = "jwt_refresh_token"
+	TokenTypeAccessToken        TokenType = "access_token"
+	TokenTypeRefreshToken       TokenType = "refresh_token"
+	TokenTypeVerification       TokenType = "verification"
+	TokenTypePasswordReset      TokenType = "password_reset"
+	TokenTypeTwoFactorChallenge TokenType = "two_factor_challenge"
+	TokenJwtAccessToken         TokenType = "jwt_access_token"
+	TokenJwtRefreshToken        TokenType = "jwt_refresh_token"
 )
 
 type Token struct {

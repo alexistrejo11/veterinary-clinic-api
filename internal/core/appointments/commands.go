@@ -37,6 +37,7 @@ type CreateCommand struct {
 type CancelCommand struct {
 	ID         AppointmentID
 	EmployeeID *employees.EmployeeID
+	CustomerID *customers.CustomerID
 	Reason     string
 }
 
@@ -55,21 +56,23 @@ type ConfirmCommand struct {
 
 // UpdateCommand represents a command to update appointment information
 type UpdateCommand struct {
-	ID      AppointmentID
-	Reason  *string
-	Notes   *string
-	Service *ClinicService
+	ID         AppointmentID
+	EmployeeID *employees.EmployeeID
+	Reason     *string
+	Notes      *string
+	Service    *ClinicService
 }
 
 // NotAttendCommand represents a command to mark an appointment as not attended
 type NotAttendCommand struct {
-	ID    AppointmentID
-	VetID *employees.EmployeeID
+	ID         AppointmentID
+	EmployeeID *employees.EmployeeID
 }
 
 // RescheduleCommand represents a command to reschedule an appointment
 type RescheduleCommand struct {
 	ID          AppointmentID
+	EmployeeID  *employees.EmployeeID
 	NewDateTime time.Time
 	Reason      *string
 }
@@ -111,11 +114,13 @@ func NewCreateCommand(
 func NewCancelCommand(
 	id AppointmentID,
 	employeeID *employees.EmployeeID,
+	customerID *customers.CustomerID,
 	reason string,
 ) CancelCommand {
 	return CancelCommand{
 		ID:         id,
 		EmployeeID: employeeID,
+		CustomerID: customerID,
 		Reason:     reason,
 	}
 }
@@ -152,22 +157,24 @@ func NewDeleteCommand(id AppointmentID, isHardDelete bool) DeleteCommand {
 // NewNotAttendCommand creates a new NotAttendCommand instance
 func NewNotAttendCommand(
 	id AppointmentID,
-	vetID *employees.EmployeeID,
+	employeeID *employees.EmployeeID,
 ) NotAttendCommand {
 	return NotAttendCommand{
-		ID:    id,
-		VetID: vetID,
+		ID:         id,
+		EmployeeID: employeeID,
 	}
 }
 
 // NewRescheduleCommand creates a new RescheduleCommand instance
 func NewRescheduleCommand(
 	id AppointmentID,
+	employeeID *employees.EmployeeID,
 	newDateTime time.Time,
 	reason *string,
 ) RescheduleCommand {
 	return RescheduleCommand{
 		ID:          id,
+		EmployeeID:  employeeID,
 		NewDateTime: newDateTime,
 		Reason:      reason,
 	}
@@ -176,15 +183,17 @@ func NewRescheduleCommand(
 // NewUpdateCommand creates a new UpdateCommand instance
 func NewUpdateCommand(
 	id AppointmentID,
+	employeeID *employees.EmployeeID,
 	reason *string,
 	notes *string,
 	service *ClinicService,
 ) UpdateCommand {
 	return UpdateCommand{
-		ID:      id,
-		Service: service,
-		Reason:  reason,
-		Notes:   notes,
+		ID:         id,
+		EmployeeID: employeeID,
+		Service:    service,
+		Reason:     reason,
+		Notes:      notes,
 	}
 }
 

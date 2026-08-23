@@ -89,7 +89,7 @@ func CustomerIDFromContext(c *gin.Context, resolver CustomerIDResolver) (uint, e
 	return resolver(c.Request.Context(), userID.Value())
 }
 
-// OptionalCustomerIDProvider returns an optional customer ID (e.g. from param or nil for manager).
+// OptionalCustomerIDProvider returns an optional customer ID from the request.
 type OptionalCustomerIDProvider func(c *gin.Context) (*uint, error)
 
 // CustomerIDFromParamOptional returns customer_id from the URL param if present; otherwise (nil, nil).

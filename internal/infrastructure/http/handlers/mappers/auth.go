@@ -26,12 +26,12 @@ func (m *AuthMapper) RegisterRequestToCommand(req dtos.RegisterRequest) (auth.Re
 		Role:          role,
 		Email:         req.Email,
 		Password:      req.Password,
-		Name:          req.Name,
+		FirstName:     req.FirstName,
+		LastName:      req.LastName,
 		PhoneNumber:   req.PhoneNumber,
 		DateOfBirth:   req.DateOfBirth,
 		Gender:        req.Gender,
 		PhotoURL:      req.PhotoURL,
-		Bio:           req.Bio,
 		EmployeeID:    req.EmployeeID,
 		LicenseNumber: req.LicenseNumber,
 	}
@@ -52,12 +52,11 @@ func (m *AuthMapper) ActivateAccountRequestToCommand(req dtos.ActivateAccountReq
 func (m *AuthMapper) LoginRequestToCommand(req dtos.LoginRequest, c *gin.Context) auth.LoginCommand {
 	meta := http.NewLoginMetadata(c)
 	return auth.LoginCommand{
-		Email:         req.Email,
-		Password:      req.Password,
-		DeviceInfo:    meta.DeviceInfo,
-		UserAgent:     meta.UserAgent,
-		IPAddress:     meta.IP,
-		TwoFactorCode: req.TwoFactorCode,
+		Email:      req.Email,
+		Password:   req.Password,
+		DeviceInfo: meta.DeviceInfo,
+		UserAgent:  meta.UserAgent,
+		IPAddress:  meta.IP,
 	}
 }
 
@@ -70,10 +69,10 @@ func (m *AuthMapper) LogoutRequestToCommand(req dtos.LogoutRequest) auth.LogoutC
 	return auth.LogoutCommand{RefreshToken: req.RefreshToken}
 }
 
-func (m *AuthMapper) VerifyTwoFactorRequestToCommand(req dtos.VerifyTwoFactorRequest, userID shared.UserID) auth.VerifyTwoFactorCommand {
+func (m *AuthMapper) VerifyTwoFactorRequestToCommand(req dtos.VerifyTwoFactorRequest) auth.VerifyTwoFactorCommand {
 	return auth.VerifyTwoFactorCommand{
-		UserID:        userID,
-		TwoFactorCode: req.TwoFactorCode,
+		ChallengeToken: req.ChallengeToken,
+		TwoFactorCode:  req.TwoFactorCode,
 	}
 }
 
@@ -135,10 +134,10 @@ func userToAuthResponse(u users.User) dtos.UserAuthResponse {
 	}
 }
 
-func (m *AuthMapper) RequiresTwoFactorToResponse(userID shared.UserID) dtos.RequiresTwoFactorResponse {
+func (m *AuthMapper) RequiresTwoFactorToResponse(challengeToken string) dtos.RequiresTwoFactorResponse {
 	return dtos.RequiresTwoFactorResponse{
 		RequiresTwoFactor: true,
-		UserID:            userID.Value(),
+		ChallengeToken:    challengeToken,
 		Message:           "Two-factor authentication is required to complete login",
 	}
 }

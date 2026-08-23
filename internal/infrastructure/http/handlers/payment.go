@@ -13,10 +13,11 @@ import (
 )
 
 type PaymentHandler struct {
-	queryService   payments.QueryService
-	commandService payments.CommandService
-	validator      *validator.Validate
-	mapper         *mappers.PaymentMapper
+	queryService       payments.QueryService
+	commandService     payments.CommandService
+	validator          *validator.Validate
+	mapper             *mappers.PaymentMapper
+	customerIDResolver CustomerIDResolver
 }
 
 func NewPaymentHandler(
@@ -24,13 +25,66 @@ func NewPaymentHandler(
 	commandService payments.CommandService,
 	validator *validator.Validate,
 	mapper *mappers.PaymentMapper,
+	customerIDResolver CustomerIDResolver,
 ) *PaymentHandler {
 	return &PaymentHandler{
-		queryService:   queryService,
-		commandService: commandService,
-		validator:      validator,
-		mapper:         mapper,
+		queryService:       queryService,
+		commandService:     commandService,
+		validator:          validator,
+		mapper:             mapper,
+		customerIDResolver: customerIDResolver,
 	}
+}
+
+// @Summary Get my payment
+// @Description Returns a payment belonging to the authenticated customer. Requires customer role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Payment ID"
+// @Success 200 {object} http.APIResponse{data=dtos.PaymentResponse}
+// @Router /me/payments/{id} [get]
+func (s *PaymentHandler) GetMyPayment(c *gin.Context) {
+	id, err := http.ParseParamToUInt(c, "id")
+	if err != nil {
+		http.BadRequest(c, errors.RequestURLParamError(err, "id", c.Param("id")))
+		return
+	}
+	customerID, err := CustomerIDFromContext(c, s.customerIDResolver)
+	if err != nil {
+		http.ApplicationError(c, err)
+		return
+	}
+	payment, err := s.queryService.GetPaymentByID(c.Request.Context(), payments.NewPaymentID(id))
+	if err != nil {
+		http.ApplicationError(c, err)
+		return
+	}
+	if payment.PaidFromCustomer.Int32() != int32(customerID) {
+		http.NotFound(c, nil)
+		return
+	}
+	http.Found(c, s.mapper.ToPaymentResponse(payment), "Payment")
+}
+
+// @Summary List my payments
+// @Description Lists payments belonging to the authenticated customer. Requires customer role.
+// @Tags payments
+// @Security BearerAuth
+// @Success 200 {object} http.APIResponse{data=[]dtos.PaymentResponse}
+// @Router /me/payments [get]
+func (s *PaymentHandler) GetMyPayments(c *gin.Context) {
+	customerID, err := CustomerIDFromContext(c, s.customerIDResolver)
+	if err != nil {
+		http.ApplicationError(c, err)
+		return
+	}
+	paymentPage, err := s.queryService.GetPaymentsByCustomerID(c.Request.Context(), customers.NewCustomerID(customerID))
+	if err != nil {
+		http.ApplicationError(c, err)
+		return
+	}
+	responsePage := s.mapper.ToPaginatedResponse(paymentPage)
+	http.Paginated(c, &responsePage, "Payments")
 }
 
 // GetPaymentByID godoc
@@ -65,9 +119,16 @@ func (s *PaymentHandler) GetPaymentByID(c *gin.Context) {
 	http.Found(c, paymentResponse, "Payment")
 }
 
-func (s *PaymentHandler) GetPaymentByTransactionID(c *gin.Context) {
-	transactionID := c.Param("transaction_id")
-	payment, err := s.queryService.GetPaymentByTransactionID(c.Request.Context(), transactionID)
+// @Summary Get payment by reference
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param reference path string true "Payment reference"
+// @Success 200 {object} http.APIResponse{data=dtos.PaymentResponse}
+// @Router /payments/reference/{reference} [get]
+func (s *PaymentHandler) GetPaymentByReference(c *gin.Context) {
+	reference := c.Param("reference")
+	payment, err := s.queryService.GetPaymentByReference(c.Request.Context(), reference)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -77,9 +138,17 @@ func (s *PaymentHandler) GetPaymentByTransactionID(c *gin.Context) {
 	http.Found(c, paymentResponse, "Payment")
 }
 
+// @Summary Search payments
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param page_number query int false "Page number"
+// @Param page_size query int false "Page size"
+// @Success 200 {object} http.APIResponse{data=[]dtos.PaymentResponse}
+// @Router /payments [get]
 func (s *PaymentHandler) GetPaymentsBySpecification(c *gin.Context) {
 	var requestBodyData dtos.PaymentSearchRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
+	if err := http.ShouldBindAndValidateQuery(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
 		return
 	}
@@ -100,6 +169,13 @@ func (s *PaymentHandler) GetPaymentsBySpecification(c *gin.Context) {
 	http.Paginated(c, &responsePage, "Payments")
 }
 
+// @Summary List customer payments
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Customer ID"
+// @Success 200 {object} http.APIResponse{data=[]dtos.PaymentResponse}
+// @Router /payments/customers/{id} [get]
 func (s *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 	customerIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -118,6 +194,13 @@ func (s *PaymentHandler) GetPaymentsByCustomerID(c *gin.Context) {
 	http.Paginated(c, &responsePage, "Payments")
 }
 
+// @Summary Create payment
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param body body dtos.PaymentCreateRequest true "Payment"
+// @Success 201 {object} http.APIResponse
+// @Router /payments [post]
 func (s *PaymentHandler) CreatePayment(c *gin.Context) {
 	var requestBodyData dtos.PaymentCreateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
@@ -140,6 +223,14 @@ func (s *PaymentHandler) CreatePayment(c *gin.Context) {
 	http.Created(c, payment.ID.Value(), "Payment")
 }
 
+// @Summary Update payment
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Payment ID"
+// @Param body body dtos.PaymentUpdateRequest true "Payment"
+// @Success 200 {object} http.APIResponse
+// @Router /payments/{id} [put]
 func (s *PaymentHandler) UpdatePayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -174,6 +265,13 @@ func (s *PaymentHandler) UpdatePayment(c *gin.Context) {
 	http.Updated(c, nil, "Payment")
 }
 
+// @Summary Delete payment
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Payment ID"
+// @Success 200 {object} http.APIResponse
+// @Router /payments/{id} [delete]
 func (s *PaymentHandler) DeletePayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -195,6 +293,14 @@ func (s *PaymentHandler) DeletePayment(c *gin.Context) {
 	http.Success(c, nil, "Payment")
 }
 
+// @Summary Cancel payment
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Payment ID"
+// @Param reason formData string false "Cancellation reason"
+// @Success 200 {object} http.APIResponse
+// @Router /payments/{id}/cancel [post]
 func (s *PaymentHandler) CancelPayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -204,7 +310,7 @@ func (s *PaymentHandler) CancelPayment(c *gin.Context) {
 
 	paymentID := payments.NewPaymentID(paymentIDUInt)
 	command := payments.CancelPaymentCommand{
-		ID: paymentID,
+		ID: paymentID, Reason: c.PostForm("reason"),
 	}
 
 	err = s.commandService.CancelPayment(c.Request.Context(), command)
@@ -216,6 +322,14 @@ func (s *PaymentHandler) CancelPayment(c *gin.Context) {
 	http.Success(c, nil, "Payment")
 }
 
+// @Summary Process payment
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Payment ID"
+// @Param reason formData string false "Processing reason"
+// @Success 200 {object} http.APIResponse
+// @Router /payments/{id}/process [post]
 func (s *PaymentHandler) ProcessPayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -225,7 +339,7 @@ func (s *PaymentHandler) ProcessPayment(c *gin.Context) {
 
 	paymentID := payments.NewPaymentID(paymentIDUInt)
 	command := payments.ProcessPaymentCommand{
-		ID: paymentID,
+		ID: paymentID, Reason: c.PostForm("reason"),
 	}
 
 	err = s.commandService.ProcessPayment(c.Request.Context(), command)
@@ -237,6 +351,14 @@ func (s *PaymentHandler) ProcessPayment(c *gin.Context) {
 	http.Success(c, nil, "Payment")
 }
 
+// @Summary Refund payment
+// @Description Requires admin or receptionist role.
+// @Tags payments
+// @Security BearerAuth
+// @Param id path int true "Payment ID"
+// @Param reason formData string false "Refund reason"
+// @Success 200 {object} http.APIResponse
+// @Router /payments/{id}/refund [post]
 func (s *PaymentHandler) RefundPayment(c *gin.Context) {
 	paymentIDUInt, err := http.ParseParamToUInt(c, "id")
 	if err != nil {
@@ -246,7 +368,7 @@ func (s *PaymentHandler) RefundPayment(c *gin.Context) {
 
 	paymentID := payments.NewPaymentID(paymentIDUInt)
 	command := payments.RefundPaymentCommand{
-		ID: paymentID,
+		ID: paymentID, Reason: c.PostForm("reason"),
 	}
 
 	err = s.commandService.RefundPayment(c.Request.Context(), command)

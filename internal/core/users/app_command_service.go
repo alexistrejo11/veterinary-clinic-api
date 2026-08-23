@@ -4,12 +4,18 @@ import (
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/password"
 	"context"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type CommandService interface {
 	CreateUser(ctx context.Context, cmd CreateUserCommand) (User, error)
 	UpdatePassword(ctx context.Context, cmd UpdatePasswordCommand) error
 	ResetPasswordByCode(ctx context.Context, cmd ResetPasswordByCodeCommand) error
+	SetEmailVerified(ctx context.Context, id shared.UserID) error
+	EnableTwoFactorAuth(ctx context.Context, id shared.UserID, method, encryptedSecret string, backupCodeHashes []string) error
+	DisableTwoFactorAuth(ctx context.Context, id shared.UserID) error
+	ConsumeBackupCode(ctx context.Context, id shared.UserID, code string) (bool, error)
 	UpdateUserStatus(ctx context.Context, cmd UpdateUserStatusCommand) error
 	UpdateProfileData(ctx context.Context, cmd UpdateProfileCommand) error
 	RestoreUser(ctx context.Context, id shared.UserID) error
@@ -95,6 +101,59 @@ func (s *commandService) ResetPasswordByCode(ctx context.Context, cmd ResetPassw
 	}
 	user.UpdatePassword(hashedPassword)
 	return s.repository.Save(ctx, &user)
+}
+
+func (s *commandService) SetEmailVerified(ctx context.Context, id shared.UserID) error {
+	user, err := s.repository.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !user.EmailVerified {
+		user.EmailVerified = true
+		user.IncrementVersion()
+	}
+	return s.repository.Save(ctx, &user)
+}
+
+func (s *commandService) EnableTwoFactorAuth(ctx context.Context, id shared.UserID, method, encryptedSecret string, backupCodeHashes []string) error {
+	user, err := s.repository.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := user.EnableTwoFactorAuth(method, encryptedSecret, backupCodeHashes); err != nil {
+		return err
+	}
+	return s.repository.Save(ctx, &user)
+}
+
+func (s *commandService) DisableTwoFactorAuth(ctx context.Context, id shared.UserID) error {
+	user, err := s.repository.FindByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := user.DisableTwoFactorAuth(); err != nil {
+		return err
+	}
+	return s.repository.Save(ctx, &user)
+}
+
+func (s *commandService) ConsumeBackupCode(ctx context.Context, id shared.UserID, code string) (bool, error) {
+	user, err := s.repository.FindByID(ctx, id)
+	if err != nil {
+		return false, err
+	}
+	for index, hash := range user.TwoFactorAuth.BackupCodes {
+		if bcrypt.CompareHashAndPassword([]byte(hash), []byte(code)) != nil {
+			continue
+		}
+		user.TwoFactorAuth.BackupCodes = append(user.TwoFactorAuth.BackupCodes[:index], user.TwoFactorAuth.BackupCodes[index+1:]...)
+		user.TwoFactorAuth.RecordUsage()
+		if err := s.repository.Save(ctx, &user); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func (s *commandService) UpdateUserStatus(ctx context.Context, cmd UpdateUserStatusCommand) error {

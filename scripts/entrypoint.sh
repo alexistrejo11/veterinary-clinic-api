@@ -38,11 +38,13 @@ elif command -v migrate >/dev/null 2>&1; then
 	fi
 
 	echo "Executing migrations..."
-	if migrate -path ./database/migrations -database "$RESOLVED_DATABASE_URL" -verbose up; then
-		echo "Migrations completed successfully!"
-	else
-		echo "Migrations failed; continuing application startup..."
+	if ! migrate -path ./database/migrations -database "$RESOLVED_DATABASE_URL" -verbose up; then
+		echo "Migrations failed. If the error is 'Dirty database version N', clear it with:" >&2
+		echo "  migrate -path ./database/migrations -database \"\$DATABASE_URL\" force \$((N-1))" >&2
+		echo "then restart. Do not start the API against a dirty schema." >&2
+		exit 1
 	fi
+	echo "Migrations completed successfully!"
 else
 	echo "migrate command not found, skipping migrations"
 fi

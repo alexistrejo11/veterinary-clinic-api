@@ -3,30 +3,30 @@ package dtos
 // Auth request/response DTOs with validation. Use ShouldBindBodyWithJSON for body, ShouldBindQuery for query.
 
 const (
-	maxLenEmail      = 255
-	maxLenPassword   = 128
-	maxLenCode       = 32
-	maxLenRole       = 50
-	maxLenName       = 200
-	maxLenPhone      = 30
-	maxLenBio        = 500
-	maxLenDevice     = 200
-	maxLenUserAgent  = 512
-	maxLenMethod     = 20
+	maxLenEmail     = 255
+	maxLenPassword  = 128
+	maxLenCode      = 32
+	maxLenRole      = 50
+	maxLenName      = 200
+	maxLenPhone     = 30
+	maxLenBio       = 500
+	maxLenDevice    = 200
+	maxLenUserAgent = 512
+	maxLenMethod    = 20
 )
 
 // RegisterRequest is the body for POST /auth/register
-// @Description Request body for user registration. Role: admin, veterinarian, customer, or receptionist. Admins get immediate access; others may require activation.
+// @Description Request body for public customer registration.
 type RegisterRequest struct {
-	Role          string  `json:"role" binding:"required,oneof=admin veterinarian customer receptionist" example:"customer"`
+	Role          string  `json:"role" binding:"required,eq=customer" example:"customer"`
 	Email         string  `json:"email" binding:"required,email,max=255" example:"user@example.com"`
 	Password      string  `json:"password" binding:"required,min=8,max=128" example:"SecurePass123!"`
-	Name          string  `json:"name" binding:"omitempty,max=200"`
+	FirstName     string  `json:"first_name" binding:"required,max=100"`
+	LastName      string  `json:"last_name" binding:"required,max=100"`
 	PhoneNumber   string  `json:"phone_number" binding:"omitempty,max=30"`
-	DateOfBirth   string  `json:"date_of_birth" binding:"omitempty,max=20"`
-	Gender        string  `json:"gender" binding:"omitempty,max=20"`
+	DateOfBirth   string  `json:"date_of_birth" binding:"required,datetime=2006-01-02"`
+	Gender        string  `json:"gender" binding:"required,oneof=male female other not_specified"`
 	PhotoURL      string  `json:"photo_url" binding:"omitempty,max=500"`
-	Bio           string  `json:"bio" binding:"omitempty,max=500"`
 	EmployeeID    *uint   `json:"employee_id,omitempty"`
 	LicenseNumber *string `json:"license_number,omitempty" binding:"omitempty,max=100"`
 }
@@ -41,9 +41,8 @@ type ActivateAccountRequest struct {
 // LoginRequest is the body for POST /auth/login
 // @Description Email, password, and optional two_factor_code when 2FA is enabled.
 type LoginRequest struct {
-	Email          string  `json:"email" binding:"required,email,max=255"`
-	Password       string  `json:"password" binding:"required,max=128"`
-	TwoFactorCode  *string `json:"two_factor_code,omitempty" binding:"omitempty,max=16"`
+	Email    string `json:"email" binding:"required,email,max=255"`
+	Password string `json:"password" binding:"required,max=128"`
 }
 
 // RefreshTokenRequest is the body for POST /auth/refresh
@@ -61,13 +60,14 @@ type LogoutRequest struct {
 // VerifyTwoFactorRequest is the body for POST /auth/2fa/verify
 // @Description One-time 2FA code (TOTP or backup code).
 type VerifyTwoFactorRequest struct {
-	TwoFactorCode string `json:"two_factor_code" binding:"required,max=16"`
+	ChallengeToken string `json:"challenge_token" binding:"required,max=64"`
+	TwoFactorCode  string `json:"two_factor_code" binding:"required,max=16"`
 }
 
 // EnableTwoFactorRequest is the body for POST /auth/2fa/enable
-// @Description 2FA method: totp, sms, or email.
+// @Description 2FA method: totp.
 type EnableTwoFactorRequest struct {
-	Method string `json:"method" binding:"required,oneof=totp sms email"`
+	Method string `json:"method" binding:"required,eq=totp"`
 }
 
 // VerifyEmailRequest is the body for POST /auth/verify-email
@@ -101,8 +101,8 @@ type UpdatePasswordRequest struct {
 // SessionResponse returned on login, refresh, and verify-2fa
 // @Description Contains access token, refresh token, and minimal user info.
 type SessionResponse struct {
-	AccessToken  TokenResponse   `json:"access_token"`
-	RefreshToken TokenResponse   `json:"refresh_token"`
+	AccessToken  TokenResponse    `json:"access_token"`
+	RefreshToken TokenResponse    `json:"refresh_token"`
 	User         UserAuthResponse `json:"user"`
 }
 
@@ -126,6 +126,11 @@ type UserAuthResponse struct {
 // @Description Returned when login succeeds but 2FA verification is required. Client should prompt for code and call POST /auth/2fa/verify.
 type RequiresTwoFactorResponse struct {
 	RequiresTwoFactor bool   `json:"requires_two_factor"`
-	UserID            uint   `json:"user_id"`
+	ChallengeToken    string `json:"challenge_token"`
 	Message           string `json:"message"`
+}
+
+// EnableTwoFactorResponse contains recovery codes shown only once at enrollment.
+type EnableTwoFactorResponse struct {
+	BackupCodes []string `json:"backup_codes"`
 }

@@ -27,7 +27,7 @@ func NewAuthHandler(service auth.AuthService, validator *validator.Validate, map
 
 // Register godoc
 // @Summary      Register a new user
-// @Description  Creates a new user account (admin, customer, or employee). Admins get immediate access; others may require activation.
+// @Description  Creates a pending customer account and emails an activation code.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -99,11 +99,11 @@ func (ctrl *AuthHandler) ActivateAccount(c *gin.Context) {
 
 // Login godoc
 // @Summary      Login
-// @Description  Authenticates with email and password. Returns access and refresh tokens. If 2FA is enabled, data contains dtos.RequiresTwoFactorResponse instead of the session.
+// @Description  Authenticates with email and password. Returns an opaque challenge when TOTP verification is required.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Param        body    body      dtos.LoginRequest  true  "Email and password; optional two_factor_code"
+// @Param        body    body      dtos.LoginRequest  true  "Email and password"
 // @Success      200     {object}  http.APIResponse{data=dtos.SessionResponse}  "Login successful (session payload with tokens and user)"
 // @Failure      400     {object}  http.APIResponse   "Invalid credentials or validation error"
 // @Failure      401     {object}  http.APIResponse   "Unauthorized"
@@ -121,7 +121,7 @@ func (ctrl *AuthHandler) Login(c *gin.Context) {
 	if err != nil {
 		var requires2FA *auth.RequiresTwoFactorError
 		if errors.As(err, &requires2FA) {
-			http.Success(c, ctrl.mapper.RequiresTwoFactorToResponse(requires2FA.UserID), "Two-factor authentication required")
+			http.Success(c, ctrl.mapper.RequiresTwoFactorToResponse(requires2FA.ChallengeToken), "Two-factor authentication required")
 			return
 		}
 		http.ApplicationError(c, err)
@@ -133,11 +133,10 @@ func (ctrl *AuthHandler) Login(c *gin.Context) {
 
 // RefreshToken godoc
 // @Summary      Refresh access token
-// @Description  Exchanges a valid refresh token for a new access token and refresh token. Requires Bearer auth.
+// @Description  Exchanges a valid refresh token for a new access token and refresh token.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Security     BearerAuth
 // @Param        body    body      dtos.RefreshTokenRequest  true  "Refresh token"
 // @Success      200     {object}  http.APIResponse{data=dtos.SessionResponse}  "New session payload"
 // @Failure      400     {object}  http.APIResponse          "Invalid or expired refresh token"
@@ -175,6 +174,12 @@ func (ctrl *AuthHandler) RefreshToken(c *gin.Context) {
 // @Failure      500     {object}  http.APIResponse   "Internal server error"
 // @Router       /auth/logout [post]
 func (ctrl *AuthHandler) Logout(c *gin.Context) {
+	userID, err := middleware.GetUserIDFromContext(c)
+	if err != nil {
+		http.Unauthorized(c, err)
+		return
+	}
+
 	var req dtos.LogoutRequest
 	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
 		http.BadRequest(c, err)
@@ -182,7 +187,8 @@ func (ctrl *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	command := ctrl.mapper.LogoutRequestToCommand(req)
-	err := ctrl.service.Logout(c.Request.Context(), command)
+	command.UserID = userID
+	err = ctrl.service.Logout(c.Request.Context(), command)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -208,7 +214,6 @@ func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 		http.Unauthorized(c, err)
 		return
 	}
-
 	err = ctrl.service.LogoutAll(c.Request.Context(), auth.LogoutAllCommand{UserID: userID})
 	if err != nil {
 		http.ApplicationError(c, err)
@@ -220,11 +225,10 @@ func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 
 // VerifyTwoFactor godoc
 // @Summary      Verify 2FA code
-// @Description  Completes login by verifying the two-factor code. Returns new session payload. Requires Bearer auth.
+// @Description  Completes login using an opaque two-factor challenge and a TOTP or backup code.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Security     BearerAuth
 // @Param        body    body      dtos.VerifyTwoFactorRequest  true  "2FA code"
 // @Success      200     {object}  http.APIResponse{data=dtos.SessionResponse}  "Session with tokens"
 // @Failure      400     {object}  http.APIResponse            "Invalid code"
@@ -232,19 +236,13 @@ func (ctrl *AuthHandler) LogoutAll(c *gin.Context) {
 // @Failure      500     {object}  http.APIResponse            "Internal server error"
 // @Router       /auth/2fa/verify [post]
 func (ctrl *AuthHandler) VerifyTwoFactor(c *gin.Context) {
-	userID, err := middleware.GetUserIDFromContext(c)
-	if err != nil {
-		http.Unauthorized(c, err)
-		return
-	}
-
 	var req dtos.VerifyTwoFactorRequest
 	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
 		http.BadRequest(c, err)
 		return
 	}
 
-	command := ctrl.mapper.VerifyTwoFactorRequestToCommand(req, userID)
+	command := ctrl.mapper.VerifyTwoFactorRequestToCommand(req)
 	session, err := ctrl.service.VerifyTwoFactor(c.Request.Context(), command)
 	if err != nil {
 		http.ApplicationError(c, err)
@@ -256,7 +254,7 @@ func (ctrl *AuthHandler) VerifyTwoFactor(c *gin.Context) {
 
 // EnableTwoFactor godoc
 // @Summary      Enable two-factor authentication
-// @Description  Enables 2FA for the authenticated user (method: totp, sms, or email). Requires Bearer auth.
+// @Description  Enables TOTP 2FA for the authenticated user and returns recovery codes once. Requires Bearer auth.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
@@ -281,13 +279,13 @@ func (ctrl *AuthHandler) EnableTwoFactor(c *gin.Context) {
 	}
 
 	command := ctrl.mapper.EnableTwoFactorRequestToCommand(req, userID)
-	err = ctrl.service.EnableTwoFactor(c.Request.Context(), command)
+	enrollment, err := ctrl.service.EnableTwoFactor(c.Request.Context(), command)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
 	}
 
-	http.Success(c, nil, "Two factor enabled successfully")
+	http.Success(c, dtos.EnableTwoFactorResponse{BackupCodes: enrollment.BackupCodes}, "Two factor enabled successfully")
 }
 
 // DisableTwoFactor godoc
@@ -337,11 +335,10 @@ func (ctrl *AuthHandler) VerifyEmail(c *gin.Context) {
 
 // RequestResetPassword godoc
 // @Summary      Request password reset
-// @Description  Sends a password reset link/code to the given email. Requires Bearer auth.
+// @Description  Sends a password reset code to the given email.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Security     BearerAuth
 // @Param        body    body      dtos.RequestResetPasswordRequest  true  "Email"
 // @Success      200     {object}  http.APIResponse                  "If email exists, reset link sent"
 // @Failure      400     {object}  http.APIResponse                  "Invalid request"
@@ -367,11 +364,10 @@ func (ctrl *AuthHandler) RequestResetPassword(c *gin.Context) {
 
 // ResetPassword godoc
 // @Summary      Reset password
-// @Description  Resets the user password using email and the code received by email. Requires Bearer auth.
+// @Description  Resets the user password using email and the code received by email.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
-// @Security     BearerAuth
 // @Param        body    body      dtos.ResetPasswordRequest  true  "Email and reset code"
 // @Success      200     {object}  http.APIResponse            "Password reset"
 // @Failure      400     {object}  http.APIResponse            "Invalid or expired code"

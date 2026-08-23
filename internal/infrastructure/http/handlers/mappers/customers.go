@@ -34,6 +34,17 @@ func (m *CustomerMapper) ToCustomerResponsePage(customerPage page.Page[customers
 	return page.MapItems(customerPage, m.ToCustomerResponse)
 }
 
+func (m *CustomerMapper) RequestToSpecification(request dtos.CustomerSearchRequest) customers.CustomerSpecification {
+	spec := customers.CustomerSpecification{
+		IsActive:   request.IsActive,
+		Pagination: request.PaginationRequest.WithDefaults().ToPagination(),
+	}
+	if request.Search != "" {
+		spec.SearchTerm = &request.Search
+	}
+	return spec
+}
+
 func (m *CustomerMapper) RequestToCreateCommand(request dtos.CustomerCreateRequest) (customers.CreateCustomerCommand, error) {
 	gender, err := shared.ParseGender(request.Gender)
 	if err != nil {

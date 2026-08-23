@@ -4,27 +4,32 @@ import (
 	"context"
 	"fmt"
 
+	"clinic-vet-api/database/sqlc"
 	"clinic-vet-api/internal/core/addresses"
 	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/auth"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
+	"clinic-vet-api/internal/core/medical"
 	"clinic-vet-api/internal/core/notifications"
 	"clinic-vet-api/internal/core/payments"
 	"clinic-vet-api/internal/core/pets"
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/infrastructure/http/handlers"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
+	"clinic-vet-api/internal/infrastructure/notification"
 	"clinic-vet-api/internal/infrastructure/persitence/repository"
+	"clinic-vet-api/internal/infrastructure/session"
 	"clinic-vet-api/internal/infrastructure/token"
+	"clinic-vet-api/internal/infrastructure/twofactor"
 	"clinic-vet-api/internal/middleware"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/password"
-	"clinic-vet-api/database/sqlc"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/redis/go-redis/v9"
+	"github.com/twilio/twilio-go"
 )
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -35,8 +40,12 @@ type APIConfig struct {
 	Validator      *validator.Validate
 	AuthMiddleware *middleware.AuthMiddleware
 	// Optional: required for full auth (login/refresh/sessions)
-	Redis     *redis.Client
-	JWTSecret string
+	Redis                  *redis.Client
+	JWTSecret              string
+	TwoFactorEncryptionKey []byte
+	SMTPConfig             notification.SMTPConfig
+	TwilioClient           *twilio.RestClient
+	TwilioFrom             string
 }
 
 func (c *APIConfig) Validate() error {
@@ -66,14 +75,22 @@ func Bootstrap(
 	authMiddleware *middleware.AuthMiddleware,
 	redis *redis.Client,
 	jwtSecret string,
+	twoFactorEncryptionKey []byte,
+	smtpConfig notification.SMTPConfig,
+	twilioClient *twilio.RestClient,
+	twilioFrom string,
 ) error {
 	config := &APIConfig{
-		Router:         engine,
-		Queries:        queries,
-		Validator:      validator,
-		AuthMiddleware: authMiddleware,
-		Redis:          redis,
-		JWTSecret:      jwtSecret,
+		Router:                 engine,
+		Queries:                queries,
+		Validator:              validator,
+		AuthMiddleware:         authMiddleware,
+		Redis:                  redis,
+		JWTSecret:              jwtSecret,
+		TwoFactorEncryptionKey: twoFactorEncryptionKey,
+		SMTPConfig:             smtpConfig,
+		TwilioClient:           twilioClient,
+		TwilioFrom:             twilioFrom,
 	}
 	if err := config.Validate(); err != nil {
 		return fmt.Errorf("validate API config: %w", err)
@@ -90,15 +107,34 @@ func Bootstrap(
 	appointmentRepo := repository.NewSqlcAppointmentRepository(queries)
 	paymentRepo := repository.NewPaymentSqlcRepository(queries)
 	notificationRepo := repository.NewSqlcNotificationRepository(queries)
-	// medical repos (for when medical services are implemented)
-	_ = repository.NewMedicalSessionSqlcRepository(queries)
+	medicalSessionRepo := repository.NewMedicalSessionSqlcRepository(queries)
+	vaccinationRepo := repository.NewSessionVaccinationSqlcRepository(queries)
+	surgeryRepo := repository.NewSessionSurgerySqlcRepository(queries)
+	prescriptionRepo := repository.NewSessionPrescriptionSqlcRepository(queries)
+	attachmentRepo := repository.NewSessionAttachmentSqlcRepository(queries)
+	sessionServiceRepo := repository.NewSessionServiceSqlcRepository(queries)
+	vaccineCatalogRepo := repository.NewVaccineCatalogSqlcRepository(queries)
+	medicationRepo := repository.NewMedicationSqlcRepository(queries)
+	serviceCatalogRepo := repository.NewServiceCatalogSqlcRepository(queries)
 
 	// ─── Shared ─────────────────────────────────────────────────────────────
 	passwordEncoder := password.NewPasswordEncoder()
+	emailSender, err := notification.NewSMTPSender(config.SMTPConfig)
+	if err != nil {
+		return fmt.Errorf("create SMTP sender: %w", err)
+	}
+	smsSender, err := notification.NewTwilioSender(config.TwilioClient, config.TwilioFrom)
+	if err != nil {
+		return fmt.Errorf("create Twilio sender: %w", err)
+	}
+	notificationSvc := notifications.NewNotificationService(notificationRepo, emailSender, smsSender)
 
 	// ─── User + Profile ─────────────────────────────────────────────────────
 	userCommand := users.NewCommandService(userRepo, passwordEncoder)
 	userQuery := users.NewUserQueryService(userRepo)
+
+	// ─── Customer ────────────────────────────────────────────────────────────
+	customerSvc := customers.NewCustomerService(customerRepo)
 
 	// ─── Auth (optional: needs Redis + JWTSecret) ────────────────────────────
 	var authSvc auth.AuthService
@@ -109,13 +145,21 @@ func Bootstrap(
 		if err != nil {
 			return fmt.Errorf("create token service: %w", err)
 		}
-		// SessionRepository (e.g. Redis-backed) needs to be implemented and injected here
-		var sessionRepo auth.SessionRepository = nil
-		// TwoFactorProvider (e.g. TOTP/SMS) needs to be implemented and injected here
-		var twoFactor auth.TwoFactorProvider = nil
+		sessionRepo, err := session.NewRedisRepository(config.Redis)
+		if err != nil {
+			return fmt.Errorf("create session repository: %w", err)
+		}
+		twoFactorProvider, err := twofactor.NewTOTPProvider(twofactor.ProviderConfig{
+			EncryptionKey: config.TwoFactorEncryptionKey,
+			Issuer:        "Clinic Vet API",
+			Users:         userQuery,
+		})
+		if err != nil {
+			return fmt.Errorf("create two-factor provider: %w", err)
+		}
 		authSvc = auth.NewAuthService(
 			tokenSvc, userCommand, userQuery,
-			sessionRepo, passwordEncoder, twoFactor,
+			sessionRepo, passwordEncoder, twoFactorProvider, notificationSvc, customerSvc,
 		)
 	} else {
 		// Auth handler will be nil; router must allow nil auth or Bootstrap will fail
@@ -125,9 +169,6 @@ func Bootstrap(
 	// ─── Address ─────────────────────────────────────────────────────────────
 	addressSvc := addresses.NewAddressService(addrRepo)
 
-	// ─── Customer ────────────────────────────────────────────────────────────
-	customerSvc := customers.NewCustomerService(customerRepo)
-
 	// ─── Employee ────────────────────────────────────────────────────────────
 	employeeSvc := employees.NewEmployeeService(employeeRepo)
 
@@ -136,10 +177,25 @@ func Bootstrap(
 	petCustomerRepo := &petCustomerRepoAdapter{repo: customerRepo}
 	petSvc := pets.NewPetService(petRepo, petCustomerRepo)
 
+	// ─── Medical ────────────────────────────────────────────────────────────
+	medicalSessionSvc := medical.NewMedicalSessionApplicationService(
+		medicalSessionRepo, vaccinationRepo, surgeryRepo, prescriptionRepo,
+		attachmentRepo, sessionServiceRepo, petRepo, employeeRepo,
+	)
+	vaccinationSvc := medical.NewVaccinationApplicationService(vaccinationRepo, medicalSessionRepo, vaccineCatalogRepo)
+	surgerySvc := medical.NewSurgeryApplicationService(surgeryRepo, medicalSessionRepo)
+	prescriptionSvc := medical.NewPrescriptionApplicationService(prescriptionRepo, medicalSessionRepo, medicationRepo)
+	attachmentSvc := medical.NewAttachmentApplicationService(attachmentRepo, medicalSessionRepo)
+	sessionServiceSvc := medical.NewSessionServiceApplicationService(sessionServiceRepo, medicalSessionRepo, serviceCatalogRepo)
+	vaccineCatalogSvc := medical.NewVaccineCatalogApplicationService(vaccineCatalogRepo)
+	medicationCatalogSvc := medical.NewMedicationCatalogApplicationService(medicationRepo)
+	serviceCatalogSvc := medical.NewServiceCatalogApplicationService(serviceCatalogRepo)
+
 	// ─── Appointments ────────────────────────────────────────────────────────
 	appointmentDomain := appointments.NewAppointmentDomainService(appointmentRepo)
 	appointmentCommand := appointments.NewCommandService(
-		appointmentRepo, customerRepo, employeeRepo, appointmentDomain,
+		appointmentRepo, customerRepo, employeeRepo, petRepo, appointmentDomain,
+		appointments.NotificationDependencies{Service: notificationSvc, Users: userQuery},
 	)
 	appointmentQuery := appointments.NewAppointmentQueryHandler(
 		appointmentRepo, customerRepo, employeeRepo,
@@ -147,15 +203,7 @@ func Bootstrap(
 
 	// ─── Payments ────────────────────────────────────────────────────────────
 	paymentQuery := payments.NewQueryService(paymentRepo)
-	paymentCommand := payments.NewCommandService(paymentRepo)
-
-	// ─── Notifications (EmailSender/SMSender not wired; pass nil) ─────────────
-	// EmailSender and SMSender need to be implemented and injected
-	var emailSender notifications.EmailSender = nil
-	var smsSender notifications.SMSender = nil
-	notificationSvc := notifications.NewNotificationService(
-		notificationRepo, emailSender, smsSender,
-	)
+	paymentCommand := payments.NewCommandService(paymentRepo, appointmentRepo)
 
 	// ─── Resolvers (user ID → customer/employee ID) ───────────────────────────
 	customerIDResolver := func(ctx context.Context, userID uint) (uint, error) {
@@ -201,12 +249,16 @@ func Bootstrap(
 		appointmentMapper, customerIDResolver, employeeIDResolver,
 	)
 	paymentHandler := handlers.NewPaymentHandler(
-		paymentQuery, paymentCommand, config.Validator, paymentMapper,
+		paymentQuery, paymentCommand, config.Validator, paymentMapper, customerIDResolver,
 	)
 	notificationHandler := handlers.NewNotificationHandler(notificationSvc, config.Validator)
+	homeHandler := handlers.NewHomeHandler(config.Router)
 
-	// Medical: session/vaccination/surgery/prescription/catalog services not yet wired here
-	var medicalHandler *handlers.MedicalHandler = nil
+	medicalHandler := handlers.NewMedicalHandler(
+		medicalSessionSvc, vaccinationSvc, surgerySvc, prescriptionSvc, attachmentSvc,
+		sessionServiceSvc, vaccineCatalogSvc, medicationCatalogSvc, serviceCatalogSvc,
+		config.Validator, customerIDResolver, employeeIDResolver, petSvc,
+	)
 
 	appHandlers := &AppHandlers{
 		address:      addressHandler,
@@ -220,6 +272,7 @@ func Bootstrap(
 		payment:      paymentHandler,
 		medical:      medicalHandler,
 		notification: notificationHandler,
+		home:         homeHandler,
 	}
 
 	if err := assertHandlers(appHandlers, config); err != nil {
@@ -262,6 +315,9 @@ func assertHandlers(h *AppHandlers, c *APIConfig) error {
 	}
 	if h.payment == nil {
 		return fmt.Errorf("payment handler is required")
+	}
+	if h.home == nil {
+		return fmt.Errorf("home handler is required")
 	}
 	if c.Router == nil || c.AuthMiddleware == nil {
 		return fmt.Errorf("router and auth middleware are required")

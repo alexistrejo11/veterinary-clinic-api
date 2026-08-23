@@ -8,7 +8,7 @@ import (
 
 type QueryService interface {
 	GetPaymentsBySpecification(ctx context.Context, specification PaymentSpecification) (page.Page[Payment], error)
-	GetPaymentByTransactionID(ctx context.Context, transactionID string) (Payment, error)
+	GetPaymentByReference(ctx context.Context, reference string) (Payment, error)
 	GetPaymentByID(ctx context.Context, id PaymentID) (Payment, error)
 	GetPaymentsByCustomerID(ctx context.Context, customerID customers.CustomerID) (page.Page[Payment], error)
 }
@@ -25,8 +25,8 @@ func (s *queryService) GetPaymentsBySpecification(ctx context.Context, specifica
 	return s.repository.GetBySpecification(ctx, specification)
 }
 
-func (s *queryService) GetPaymentByTransactionID(ctx context.Context, transactionID string) (Payment, error) {
-	return s.repository.GetByTransactionID(ctx, transactionID)
+func (s *queryService) GetPaymentByReference(ctx context.Context, reference string) (Payment, error) {
+	return s.repository.GetByReference(ctx, reference)
 }
 
 func (s *queryService) GetPaymentByID(ctx context.Context, id PaymentID) (Payment, error) {

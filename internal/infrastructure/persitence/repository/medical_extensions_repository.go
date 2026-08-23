@@ -63,6 +63,10 @@ func (r *SessionVaccinationSqlcRepository) FindHistoryBySpec(ctx context.Context
 	for _, p := range spec.PetIDs {
 		petIds = append(petIds, int32(p))
 	}
+	employeeIds := make([]int32, 0, len(spec.EmployeeIDs))
+	for _, employeeID := range spec.EmployeeIDs {
+		employeeIds = append(employeeIds, int32(employeeID))
+	}
 	vcIds := make([]int32, 0, len(spec.VaccineCatalogIDs))
 	for _, v := range spec.VaccineCatalogIDs {
 		vcIds = append(vcIds, int32(v))
@@ -81,6 +85,7 @@ func (r *SessionVaccinationSqlcRepository) FindHistoryBySpec(ctx context.Context
 	offset := spec.Pagination.Offset()
 	params := sqlc.FindVaccinationHistoryBySpecParams{
 		PetIds:            petIds,
+		EmployeeIds:       employeeIds,
 		VaccineCatalogIds: vcIds,
 		DateFrom:          dateFrom,
 		DateTo:            dateTo,
@@ -93,6 +98,7 @@ func (r *SessionVaccinationSqlcRepository) FindHistoryBySpec(ctx context.Context
 	}
 	countParams := sqlc.CountVaccinationHistoryBySpecParams{
 		PetIds:            petIds,
+		EmployeeIds:       employeeIds,
 		VaccineCatalogIds: vcIds,
 		DateFrom:          dateFrom,
 		DateTo:            dateTo,
@@ -347,18 +353,22 @@ func (r *SessionPrescriptionSqlcRepository) FindByID(ctx context.Context, id med
 	return r.prescriptionToEntity(row), nil
 }
 
-func (r *SessionPrescriptionSqlcRepository) FindActivePrescriptionsByPet(ctx context.Context, petID uint, p page.Pagination) (page.Page[medical.SessionPrescription], error) {
+func (r *SessionPrescriptionSqlcRepository) FindActivePrescriptionsByPet(ctx context.Context, petID uint, employeeIDs []uint, p page.Pagination) (page.Page[medical.SessionPrescription], error) {
 	limit := p.Limit()
 	if limit <= 0 {
 		limit = int32(page.DefaultPageSize)
 	}
 	offset := p.Offset()
-	params := sqlc.FindActivePrescriptionsByPetIDParams{PetID: int32(petID), Limit: limit, Offset: offset}
+	employeeIds := make([]int32, 0, len(employeeIDs))
+	for _, employeeID := range employeeIDs {
+		employeeIds = append(employeeIds, int32(employeeID))
+	}
+	params := sqlc.FindActivePrescriptionsByPetIDParams{PetID: int32(petID), EmployeeIds: employeeIds, Limit: limit, Offset: offset}
 	rows, err := r.queries.FindActivePrescriptionsByPetID(ctx, params)
 	if err != nil {
 		return page.Page[medical.SessionPrescription]{}, customErr.DatabaseError(OpSelect, TableSessionPrescriptions, DriverSQL, err)
 	}
-	total, err := r.queries.CountActivePrescriptionsByPetID(ctx, int32(petID))
+	total, err := r.queries.CountActivePrescriptionsByPetID(ctx, sqlc.CountActivePrescriptionsByPetIDParams{PetID: int32(petID), EmployeeIds: employeeIds})
 	if err != nil {
 		return page.Page[medical.SessionPrescription]{}, customErr.DatabaseError(OpCount, TableSessionPrescriptions, DriverSQL, err)
 	}

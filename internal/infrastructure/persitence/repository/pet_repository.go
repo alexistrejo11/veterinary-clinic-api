@@ -155,7 +155,11 @@ func (r *PetSqlcRepository) FindByCustomerID(ctx context.Context, customerID uin
 		OrderBy:       pagination.OrderBy,
 	}
 
-	petPage := page.NewPage(r.rowsToEntities(sqlRows), int64(len(sqlRows)), req)
+	total, err := r.queries.CountPetsByCustomerID(ctx, int32(customerID))
+	if err != nil {
+		return page.Page[pets.Pet]{}, r.dbError(OpCount, ErrMsgCountPets, err)
+	}
+	petPage := page.NewPage(r.rowsToEntities(sqlRows), total, req)
 	return petPage, nil
 }
 

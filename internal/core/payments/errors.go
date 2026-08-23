@@ -14,7 +14,7 @@ const (
 	PaymentAmountInvalid         PaymentErrorCode = "PAYMENT_AMOUNT_INVALID"
 	PaymentMethodInvalid         PaymentErrorCode = "PAYMENT_METHOD_INVALID"
 	PaymentStatusInvalid         PaymentErrorCode = "PAYMENT_STATUS_INVALID"
-	PaymentTransactionIDEmpty    PaymentErrorCode = "PAYMENT_TRANSACTION_ID_EMPTY"
+	PaymentReferenceEmpty        PaymentErrorCode = "PAYMENT_REFERENCE_EMPTY"
 	PaymentDescriptionTooLong    PaymentErrorCode = "PAYMENT_DESCRIPTION_TOO_LONG"
 	PaymentDueDatePast           PaymentErrorCode = "PAYMENT_DUE_DATE_PAST"
 	PaymentPaidDateFuture        PaymentErrorCode = "PAYMENT_PAID_DATE_FUTURE"
@@ -54,9 +54,9 @@ func StatusInvalidError(ctx context.Context, status PaymentStatus, operation str
 		fmt.Sprintf("invalid payment status: %s", status.String()), operation)
 }
 
-func TransactionIDEmptyError(ctx context.Context, operation string) error {
-	return paymentValidationError(ctx, PaymentTransactionIDEmpty, "transaction_id",
-		"transaction ID cannot be empty", operation)
+func ReferenceEmptyError(ctx context.Context, operation string) error {
+	return paymentValidationError(ctx, PaymentReferenceEmpty, "reference",
+		"payment reference cannot be empty", operation)
 }
 
 func DescriptionTooLongError(ctx context.Context, length int, operation string) error {
@@ -139,9 +139,9 @@ func CancellationReasonRequiredError(ctx context.Context, operation string) erro
 		"cancellation reason is required", operation)
 }
 
-func TransactionIDRequiredError(ctx context.Context, operation string) error {
-	return paymentValidationError(ctx, PaymentTransactionIDEmpty, "transaction_id",
-		"transaction ID is required", operation)
+func ReferenceRequiredError(ctx context.Context, operation string) error {
+	return paymentValidationError(ctx, PaymentReferenceEmpty, "reference",
+		"payment reference is required", operation)
 }
 
 func CannotMarkOverdueError(ctx context.Context, currentStatus PaymentStatus, operation string) error {

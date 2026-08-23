@@ -1,5 +1,5 @@
 # Stage 1: Use a Go image to build the application
-FROM golang:1.24.0-alpine AS builder
+FROM golang:1.26.5-alpine AS builder
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ COPY scripts/parse-database-url.sh /scripts/parse-database-url.sh
 COPY scripts/parse-redis-url.sh /scripts/parse-redis-url.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE 8000
+EXPOSE ${PORT}
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["./main"]

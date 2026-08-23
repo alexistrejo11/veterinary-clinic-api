@@ -9,6 +9,7 @@ import (
 	"clinic-vet-api/internal/shared"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -422,25 +423,55 @@ func (r *NumericMapper) ToMoneyPtr(num pgtype.Numeric, currency string) (*shared
 		return nil, nil
 	}
 
-	floatValue, err := r.numericToFloat64(num)
+	decimal, err := r.numericToDecimal(num)
 	if err != nil {
 		return nil, err
 	}
 
-	if floatValue == 0 {
+	if decimal.IsZero() {
 		return nil, nil
 	}
 
-	decimal := shared.NewDecimalFromFloat(floatValue)
 	money := shared.NewMoney(decimal, currency)
 	return &money, nil
+}
+
+func (r *NumericMapper) numericToDecimal(num pgtype.Numeric) (shared.Decimal, error) {
+	if !num.Valid || num.Int == nil {
+		return shared.Decimal{}, nil
+	}
+
+	value := num.Int.String()
+	sign := ""
+	if strings.HasPrefix(value, "-") {
+		sign = "-"
+		value = strings.TrimPrefix(value, "-")
+	}
+
+	if num.Exp >= 0 {
+		value += strings.Repeat("0", int(num.Exp))
+	} else {
+		fractionDigits := int(-num.Exp)
+		if len(value) <= fractionDigits {
+			value = "0." + strings.Repeat("0", fractionDigits-len(value)) + value
+		} else {
+			value = value[:len(value)-fractionDigits] + "." + value[len(value)-fractionDigits:]
+		}
+	}
+
+	decimal, err := shared.NewDecimalFromString(sign + value)
+	if err != nil {
+		return shared.Decimal{}, fmt.Errorf("converting numeric to decimal: %w", err)
+	}
+	return decimal, nil
 }
 
 func (r *NumericMapper) FromMoneyPtr(money *shared.Money) pgtype.Numeric {
 	if money != nil {
 		amount := money.Amount()
 		return pgtype.Numeric{
-			Int:   big.NewInt(int64(amount.Float64())),
+			Int:   big.NewInt(amount.Int()),
+			Exp:   -2,
 			Valid: true,
 		}
 	}
@@ -450,7 +481,8 @@ func (r *NumericMapper) FromMoneyPtr(money *shared.Money) pgtype.Numeric {
 func (r *NumericMapper) FromMoney(money shared.Money) pgtype.Numeric {
 	amount := money.Amount()
 	return pgtype.Numeric{
-		Int:   big.NewInt(int64(amount.Float64())),
+		Int:   big.NewInt(amount.Int()),
+		Exp:   -2,
 		Valid: true,
 	}
 }
@@ -458,7 +490,8 @@ func (r *NumericMapper) FromMoney(money shared.Money) pgtype.Numeric {
 func (r *NumericMapper) ToNumeric(money shared.Money) pgtype.Numeric {
 	amount := money.Amount()
 	return pgtype.Numeric{
-		Int:   big.NewInt(int64(amount.Float64())),
+		Int:   big.NewInt(amount.Int()),
+		Exp:   -2,
 		Valid: true,
 	}
 }

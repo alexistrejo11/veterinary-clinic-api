@@ -53,12 +53,15 @@ func CreateSessionRequestToCommand(req dtos.CreateSessionRequest) (medical.Creat
 		Vitals: medical.Vitals{
 			WeightKg:        req.WeightKg,
 			TemperatureC:    req.TemperatureC,
-			HeartRate:        req.HeartRate,
-			RespiratoryRate:  req.RespiratoryRate,
+			HeartRate:       req.HeartRate,
+			RespiratoryRate: req.RespiratoryRate,
 		},
 	}
 	if req.FollowUpDate != nil && *req.FollowUpDate != "" {
-		t, _ := ParseTime(*req.FollowUpDate)
+		t, err := ParseTime(*req.FollowUpDate)
+		if err != nil {
+			return medical.CreateSessionCommand{}, err
+		}
 		cmd.FollowUpDate = &t
 	}
 	return cmd, nil
@@ -90,11 +93,17 @@ func UpdateSessionRequestToCommand(sessionID uint, req dtos.UpdateSessionRequest
 		cmd.ClinicService = &svc
 	}
 	if req.VisitDate != nil && *req.VisitDate != "" {
-		t, _ := ParseTime(*req.VisitDate)
+		t, err := ParseTime(*req.VisitDate)
+		if err != nil {
+			return medical.UpdateSessionCommand{}, err
+		}
 		cmd.VisitDate = &t
 	}
 	if req.FollowUpDate != nil && *req.FollowUpDate != "" {
-		t, _ := ParseTime(*req.FollowUpDate)
+		t, err := ParseTime(*req.FollowUpDate)
+		if err != nil {
+			return medical.UpdateSessionCommand{}, err
+		}
 		cmd.FollowUpDate = &t
 	}
 	if req.WeightKg != nil || req.TemperatureC != nil || req.HeartRate != nil || req.RespiratoryRate != nil {
@@ -159,11 +168,17 @@ func AddVaccinationRequestToCommand(req dtos.AddVaccinationRequest) (medical.Add
 		AdministeredBy:   req.AdministeredBy,
 	}
 	if req.ExpirationDate != nil && *req.ExpirationDate != "" {
-		t, _ := ParseDate(*req.ExpirationDate)
+		t, err := ParseDate(*req.ExpirationDate)
+		if err != nil {
+			return medical.AddVaccinationCommand{}, err
+		}
 		cmd.ExpirationDate = &t
 	}
 	if req.NextDoseDate != nil && *req.NextDoseDate != "" {
-		t, _ := ParseDate(*req.NextDoseDate)
+		t, err := ParseDate(*req.NextDoseDate)
+		if err != nil {
+			return medical.AddVaccinationCommand{}, err
+		}
 		cmd.NextDoseDate = &t
 	}
 	return cmd, nil
@@ -177,7 +192,10 @@ func UpdateVaccinationRequestToCommand(vaccinationID uint, req dtos.UpdateVaccin
 		ReactionNotes:   req.ReactionNotes,
 	}
 	if req.NextDoseDate != nil && *req.NextDoseDate != "" {
-		t, _ := ParseDate(*req.NextDoseDate)
+		t, err := ParseDate(*req.NextDoseDate)
+		if err != nil {
+			return medical.UpdateVaccinationCommand{}, err
+		}
 		cmd.NextDoseDate = &t
 	}
 	return cmd, nil
@@ -191,29 +209,29 @@ func AddSurgeryRequestToCommand(req dtos.AddSurgeryRequest) (medical.AddSurgeryC
 		return medical.AddSurgeryCommand{}, err
 	}
 	return medical.AddSurgeryCommand{
-		SessionID:        medical.NewSessionID(req.SessionID),
-		ProcedureName:    req.ProcedureName,
-		AnesthesiaType:   req.AnesthesiaType,
-		AnesthesiaAgent:  req.AnesthesiaAgent,
-		PreOpNotes:       req.PreOpNotes,
-		IntraOpNotes:     req.IntraOpNotes,
-		PostOpNotes:      req.PostOpNotes,
-		DurationMinutes:  req.DurationMinutes,
-		Outcome:          outcome,
-		SurgeonID:        req.SurgeonID,
+		SessionID:       medical.NewSessionID(req.SessionID),
+		ProcedureName:   req.ProcedureName,
+		AnesthesiaType:  req.AnesthesiaType,
+		AnesthesiaAgent: req.AnesthesiaAgent,
+		PreOpNotes:      req.PreOpNotes,
+		IntraOpNotes:    req.IntraOpNotes,
+		PostOpNotes:     req.PostOpNotes,
+		DurationMinutes: req.DurationMinutes,
+		Outcome:         outcome,
+		SurgeonID:       req.SurgeonID,
 	}, nil
 }
 
 func UpdateSurgeryRequestToCommand(surgeryID uint, req dtos.UpdateSurgeryRequest) (medical.UpdateSurgeryCommand, error) {
 	cmd := medical.UpdateSurgeryCommand{
-		ID:               medical.NewSurgeryID(surgeryID),
-		AnesthesiaType:   req.AnesthesiaType,
-		AnesthesiaAgent:  req.AnesthesiaAgent,
-		PreOpNotes:       req.PreOpNotes,
-		IntraOpNotes:     req.IntraOpNotes,
-		PostOpNotes:      req.PostOpNotes,
-		DurationMinutes:  req.DurationMinutes,
-		Outcome:          nil,
+		ID:              medical.NewSurgeryID(surgeryID),
+		AnesthesiaType:  req.AnesthesiaType,
+		AnesthesiaAgent: req.AnesthesiaAgent,
+		PreOpNotes:      req.PreOpNotes,
+		IntraOpNotes:    req.IntraOpNotes,
+		PostOpNotes:     req.PostOpNotes,
+		DurationMinutes: req.DurationMinutes,
+		Outcome:         nil,
 	}
 	if req.Outcome != nil {
 		o, err := medical.ParseSurgeryOutcome(*req.Outcome)
@@ -275,11 +293,11 @@ func AddAttachmentRequestToCommand(req dtos.AddAttachmentRequest) (medical.AddAt
 
 func AddSessionServiceRequestToCommand(req dtos.AddSessionServiceRequest) medical.AddSessionServiceCommand {
 	return medical.AddSessionServiceCommand{
-		SessionID:         medical.NewSessionID(req.SessionID),
-		ServiceCatalogID:  medical.NewServiceCatalogID(req.ServiceCatalogID),
-		Quantity:          req.Quantity,
-		PriceApplied:      req.PriceApplied,
-		Notes:             req.Notes,
+		SessionID:        medical.NewSessionID(req.SessionID),
+		ServiceCatalogID: medical.NewServiceCatalogID(req.ServiceCatalogID),
+		Quantity:         req.Quantity,
+		PriceApplied:     req.PriceApplied,
+		Notes:            req.Notes,
 	}
 }
 
@@ -346,4 +364,3 @@ func VaccinationHistoryRequestToSpec(req dtos.VaccinationHistoryRequest) *medica
 	spec.WithPagination(req.PaginationRequest.ToPagination())
 	return spec
 }
-

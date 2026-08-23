@@ -201,3 +201,8 @@ WHERE id = $1;
 UPDATE users
 SET deleted_at = NULL
 WHERE id = $1;
+
+-- name: IsDeletedUserByID :one
+SELECT deleted_at IS NOT NULL
+FROM users
+WHERE id = $1;

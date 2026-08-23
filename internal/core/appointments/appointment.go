@@ -13,14 +13,15 @@ import (
 
 type Appointment struct {
 	shared.Entity[AppointmentID]
-	Service       ClinicService
-	ScheduledDate time.Time
-	Status        AppointmentStatus
-	Reason        VisitReason
-	Notes         *string
-	CustomerID    customers.CustomerID
-	EmployeeID    *employees.EmployeeID
-	PetID         pets.PetID
+	Service            ClinicService
+	ScheduledDate      time.Time
+	Status             AppointmentStatus
+	Reason             VisitReason
+	Notes              *string
+	CancellationReason *string
+	CustomerID         customers.CustomerID
+	EmployeeID         *employees.EmployeeID
+	PetID              pets.PetID
 }
 
 // SetAsRequest marks the appointment as a request that needs approval
@@ -117,23 +118,32 @@ func (a *Appointment) Reschedule(ctx context.Context, newDate time.Time) error {
 	return nil
 }
 
-func (a *Appointment) Cancel(ctx context.Context) error {
+func (a *Appointment) Cancel(ctx context.Context, reason string) error {
 	operation := "CancelAppointment"
 
-	if !a.canTransitionTo(AppointmentStatusCancelled) {
+	if !a.Status.CanBeCancelled() {
 		return CannotCancelError(ctx, a.Status, operation)
 	}
 
 	a.Status = AppointmentStatusCancelled
+	if reason != "" {
+		a.CancellationReason = &reason
+	}
 	a.IncrementVersion()
 	return nil
 }
 
-func (a *Appointment) Complete(ctx context.Context) error {
+func (a *Appointment) Complete(ctx context.Context, notes *string) error {
 	operation := "CompleteAppointment"
 
 	if !a.canTransitionTo(AppointmentStatusCompleted) {
 		return CannotCompleteError(ctx, a.Status, operation)
+	}
+	if notes != nil {
+		if len(*notes) > 1000 {
+			return NotesTooLongError(ctx, operation)
+		}
+		a.Notes = notes
 	}
 
 	a.Status = AppointmentStatusCompleted

@@ -1,6 +1,7 @@
 package payments
 
 import (
+	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/shared"
 	"context"
 	"fmt"
@@ -17,26 +18,33 @@ type CommandService interface {
 }
 
 type commandService struct {
-	repository PaymentRepository
+	repository   PaymentRepository
+	appointments appointments.AppointmentRepository
 }
 
-func NewCommandService(repository PaymentRepository) CommandService {
-	return &commandService{repository: repository}
+func NewCommandService(repository PaymentRepository, appointmentRepository appointments.AppointmentRepository) CommandService {
+	return &commandService{repository: repository, appointments: appointmentRepository}
 }
 
 func (s *commandService) CancelPayment(ctx context.Context, cmd CancelPaymentCommand) error {
+	if cmd.Reason == "" {
+		return fmt.Errorf("cancellation reason is required")
+	}
 	payment, err := s.repository.GetByID(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
 
-	// For now we use a generic reason as this is an internal tracker.
-	reason := "Cancelled by clinic staff"
-	if err := payment.Cancel(ctx, reason); err != nil {
-		return err
+	if payment.IsCancelled() {
+		return nil
 	}
-
-	return s.repository.Save(ctx, &payment)
+	_, err = s.repository.CancelAuthorized(ctx, cmd.ID, cmd.Reason)
+	if err != nil {
+		if current, getErr := s.repository.GetByID(ctx, cmd.ID); getErr == nil && current.IsCancelled() {
+			return nil
+		}
+	}
+	return err
 }
 
 func (s *commandService) ProcessPayment(ctx context.Context, cmd ProcessPaymentCommand) error {
@@ -45,28 +53,38 @@ func (s *commandService) ProcessPayment(ctx context.Context, cmd ProcessPaymentC
 		return err
 	}
 
-	// Generate an internal transaction ID since we do not integrate
-	// with external payment gateways.
-	transactionID := fmt.Sprintf("INT-%d-%d", payment.ID.Value(), time.Now().UnixNano())
-
-	if err := payment.Pay(ctx, transactionID); err != nil {
-		return err
+	if payment.IsPaid() {
+		return nil
 	}
-
-	return s.repository.Save(ctx, &payment)
+	receiptNumber := fmt.Sprintf("RCT-%d-%d", payment.ID.Value(), time.Now().UnixNano())
+	_, err = s.repository.SettleAuthorized(ctx, cmd.ID, receiptNumber, cmd.Reason)
+	if err != nil {
+		if current, getErr := s.repository.GetByID(ctx, cmd.ID); getErr == nil && current.IsPaid() {
+			return nil
+		}
+	}
+	return err
 }
 
 func (s *commandService) RefundPayment(ctx context.Context, cmd RefundPaymentCommand) error {
+	if cmd.Reason == "" {
+		return fmt.Errorf("refund reason is required")
+	}
 	payment, err := s.repository.GetByID(ctx, cmd.ID)
 	if err != nil {
 		return err
 	}
 
-	if err := payment.Refund(ctx); err != nil {
-		return err
+	if payment.IsRefunded() {
+		return nil
 	}
-
-	return s.repository.Save(ctx, &payment)
+	_, err = s.repository.RefundSettled(ctx, cmd.ID, cmd.Reason)
+	if err != nil {
+		if current, getErr := s.repository.GetByID(ctx, cmd.ID); getErr == nil && current.IsRefunded() {
+			return nil
+		}
+	}
+	return err
 }
 
 func (s *commandService) DeletePayment(ctx context.Context, cmd DeletePaymentCommand) error {
@@ -79,6 +97,13 @@ func (s *commandService) DeletePayment(ctx context.Context, cmd DeletePaymentCom
 
 func (s *commandService) CreatePayment(ctx context.Context, cmd CreatePaymentCommand) (Payment, error) {
 	operation := "CreatePayment"
+
+	if cmd.Reference == "" {
+		return Payment{}, fmt.Errorf("payment reference is required")
+	}
+	if existing, err := s.repository.GetByReference(ctx, cmd.Reference); err == nil {
+		return existing, nil
+	}
 
 	if cmd.Amount <= 0 {
 		money := shared.NewMoney(shared.NewDecimalFromFloat(cmd.Amount), cmd.Currency)
@@ -95,6 +120,14 @@ func (s *commandService) CreatePayment(ctx context.Context, cmd CreatePaymentCom
 	if cmd.CustomerID.IsZero() {
 		return Payment{}, CustomerIDRequiredError(ctx, operation)
 	}
+	if !cmd.AppointmentID.IsZero() {
+		if s.appointments == nil {
+			return Payment{}, fmt.Errorf("appointment repository is required")
+		}
+		if _, err := s.appointments.FindByIDAndCustomerID(ctx, cmd.AppointmentID, cmd.CustomerID); err != nil {
+			return Payment{}, err
+		}
+	}
 
 	if !cmd.DueDate.IsZero() && cmd.DueDate.Before(time.Now()) {
 		return Payment{}, DueDatePastError(ctx, operation)
@@ -102,9 +135,10 @@ func (s *commandService) CreatePayment(ctx context.Context, cmd CreatePaymentCom
 
 	entity := Payment{
 		Amount:           amount,
-		Status:           cmd.Status,
+		Status:           PaymentStatusAuthorized,
 		Method:           cmd.Method,
-		TransactionID:    nil,
+		Reference:        cmd.Reference,
+		Reason:           nil,
 		Description:      nil,
 		DueDate:          nil,
 		PaidAt:           nil,
@@ -114,8 +148,8 @@ func (s *commandService) CreatePayment(ctx context.Context, cmd CreatePaymentCom
 		InvoiceID:        nil,
 	}
 
-	if cmd.TransactionID != "" {
-		entity.TransactionID = &cmd.TransactionID
+	if cmd.Reason != "" {
+		entity.Reason = &cmd.Reason
 	}
 	if cmd.Description != "" {
 		entity.Description = &cmd.Description
@@ -133,10 +167,6 @@ func (s *commandService) CreatePayment(ctx context.Context, cmd CreatePaymentCom
 		entity.AppointmentID = &appt
 	}
 
-	if entity.Status == "" {
-		entity.Status = PaymentStatusPending
-	}
-
 	if err := s.repository.Save(ctx, &entity); err != nil {
 		return Payment{}, err
 	}
@@ -152,9 +182,26 @@ func (s *commandService) UpdatePayment(ctx context.Context, cmd UpdatePaymentCom
 		return err
 	}
 
-	// Do not allow updates once the payment has been processed.
-	if !payment.IsPending() {
+	// Authorized ledger entries are editable until they are settled or cancelled.
+	if !payment.RequiresSettlement() {
 		return AlreadyProcessedError(ctx, payment.Status, operation)
+	}
+
+	customerID := payment.PaidFromCustomer
+	if cmd.CustomerID.IntegerID != nil && !cmd.CustomerID.IsZero() {
+		customerID = cmd.CustomerID
+	}
+	appointmentID := payment.AppointmentID
+	if cmd.AppointmentID.IntegerID != nil && !cmd.AppointmentID.IsZero() {
+		appointmentID = &cmd.AppointmentID
+	}
+	if appointmentID != nil {
+		if s.appointments == nil {
+			return fmt.Errorf("appointment repository is required")
+		}
+		if _, err := s.appointments.FindByIDAndCustomerID(ctx, *appointmentID, customerID); err != nil {
+			return err
+		}
 	}
 
 	var amount *shared.Money
@@ -187,13 +234,8 @@ func (s *commandService) UpdatePayment(ctx context.Context, cmd UpdatePaymentCom
 	}
 
 	// Update relations if provided.
-	if !cmd.CustomerID.IsZero() {
-		payment.PaidFromCustomer = cmd.CustomerID
-	}
-	if !cmd.AppointmentID.IsZero() {
-		appt := cmd.AppointmentID
-		payment.AppointmentID = &appt
-	}
+	payment.PaidFromCustomer = customerID
+	payment.AppointmentID = appointmentID
 	if cmd.InvoiceID != "" {
 		inv := cmd.InvoiceID
 		payment.InvoiceID = &inv

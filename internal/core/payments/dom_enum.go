@@ -10,6 +10,7 @@ import (
 type PaymentStatus string
 
 const (
+	PaymentStatusAuthorized    PaymentStatus = "authorized"
 	PaymentStatusPending       PaymentStatus = "pending"
 	PaymentStatusPaid          PaymentStatus = "paid"
 	PaymentStatusFailed        PaymentStatus = "failed"
@@ -23,6 +24,7 @@ const (
 // PaymentStatus constants and methods
 var (
 	ValidPaymentStatuses = []PaymentStatus{
+		PaymentStatusAuthorized,
 		PaymentStatusPending,
 		PaymentStatusPaid,
 		PaymentStatusFailed,
@@ -34,6 +36,7 @@ var (
 	}
 
 	paymentStatusMap = map[string]PaymentStatus{
+		"authorized":     PaymentStatusAuthorized,
 		"pending":        PaymentStatusPending,
 		"paid":           PaymentStatusPaid,
 		"failed":         PaymentStatusFailed,
@@ -47,6 +50,7 @@ var (
 	}
 
 	paymentStatusDisplayNames = map[PaymentStatus]string{
+		PaymentStatusAuthorized:    "Authorized",
 		PaymentStatusPending:       "Pending",
 		PaymentStatusPaid:          "Paid",
 		PaymentStatusFailed:        "Failed",
@@ -58,6 +62,10 @@ var (
 	}
 
 	paymentStatusFlow = map[PaymentStatus][]PaymentStatus{
+		PaymentStatusAuthorized: {
+			PaymentStatusPaid,
+			PaymentStatusCancelled,
+		},
 		PaymentStatusPending: {
 			PaymentStatusPaid,
 			PaymentStatusFailed,

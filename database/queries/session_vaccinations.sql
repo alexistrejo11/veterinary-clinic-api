@@ -29,6 +29,7 @@ SELECT sv.* FROM session_vaccinations sv
 JOIN medical_sessions ms ON ms.id = sv.session_id
 WHERE ms.deleted_at IS NULL
   AND (cardinality(sqlc.arg(pet_ids)::int[]) = 0 OR ms.pet_id = ANY(sqlc.arg(pet_ids)::int[]))
+  AND (cardinality(sqlc.arg(employee_ids)::int[]) = 0 OR ms.employee_id = ANY(sqlc.arg(employee_ids)::int[]))
   AND (cardinality(sqlc.arg(vaccine_catalog_ids)::int[]) = 0 OR sv.vaccine_catalog_id = ANY(sqlc.arg(vaccine_catalog_ids)::int[]))
   AND (sqlc.narg(date_from)::timestamptz IS NULL OR ms.visit_date >= sqlc.narg(date_from)::timestamptz)
   AND (sqlc.narg(date_to)::timestamptz IS NULL OR ms.visit_date <= sqlc.narg(date_to)::timestamptz)
@@ -40,6 +41,7 @@ SELECT COUNT(*) FROM session_vaccinations sv
 JOIN medical_sessions ms ON ms.id = sv.session_id
 WHERE ms.deleted_at IS NULL
   AND (cardinality(sqlc.arg(pet_ids)::int[]) = 0 OR ms.pet_id = ANY(sqlc.arg(pet_ids)::int[]))
+  AND (cardinality(sqlc.arg(employee_ids)::int[]) = 0 OR ms.employee_id = ANY(sqlc.arg(employee_ids)::int[]))
   AND (cardinality(sqlc.arg(vaccine_catalog_ids)::int[]) = 0 OR sv.vaccine_catalog_id = ANY(sqlc.arg(vaccine_catalog_ids)::int[]))
   AND (sqlc.narg(date_from)::timestamptz IS NULL OR ms.visit_date >= sqlc.narg(date_from)::timestamptz)
   AND (sqlc.narg(date_to)::timestamptz IS NULL OR ms.visit_date <= sqlc.narg(date_to)::timestamptz);

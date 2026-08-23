@@ -32,16 +32,21 @@ func SendNotificationRequestToNotification(req dtos.SendNotificationRequest) (*n
 // NotificationToResponse maps a domain notification to its response DTO.
 func NotificationToResponse(n notifications.Notification) dtos.NotificationResponse {
 	return dtos.NotificationResponse{
-		ID:        n.ID,
-		UserID:    n.UserID,
-		UserEmail: n.UserEmail,
-		UserPhone: n.UserPhone,
-		Title:     n.Title,
-		Subject:   n.Subject,
-		Message:   n.Message,
-		Type:      n.NType.String(),
-		Channel:   n.Channel.String(),
-		CreatedAt: n.CreatedAt,
+		ID:                n.ID,
+		UserID:            n.UserID,
+		UserEmail:         n.UserEmail,
+		UserPhone:         n.UserPhone,
+		Title:             n.Title,
+		Subject:           n.Subject,
+		Message:           n.Message,
+		Type:              n.NType.String(),
+		Channel:           n.Channel.String(),
+		Status:            n.Status.String(),
+		FailureMessage:    n.FailureMessage,
+		ProviderReference: n.ProviderReference,
+		SentAt:            n.SentAt,
+		Attempts:          n.Attempts,
+		CreatedAt:         n.CreatedAt,
 	}
 }
 

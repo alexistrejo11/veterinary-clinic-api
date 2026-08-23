@@ -2,11 +2,11 @@ package repository
 
 import (
 	"clinic-vet-api/database/models"
+	"clinic-vet-api/database/sqlc"
 	"clinic-vet-api/internal/core/employees"
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/mapper"
 	p "clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/database/sqlc"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -31,28 +31,40 @@ func NewEmployeeSqlcRepository(queries *sqlc.Queries) employees.EmployeeReposito
 }
 
 func (r *EmployeeSqlcRepository) GetBySpecification(ctx context.Context, spec employees.EmployeeSpecification) (p.Page[employees.Employee], error) {
-	// EmployeeSpecification is empty; use default pagination
-	limit := int32(p.DefaultPageSize)
-	offset := int32(0)
-	pageNum := int32(1)
-	params := sqlc.FindEmployeesParams{
-		Limit:  limit,
-		Offset: offset,
+	pagination := p.FromSpecPagination(spec.Pagination).WithDefaults()
+	limit := pagination.Limit()
+	offset := pagination.Offset()
+	activeFilter := int32(-1)
+	if spec.IsActive != nil {
+		if *spec.IsActive {
+			activeFilter = 1
+		} else {
+			activeFilter = 0
+		}
 	}
-	rows, err := r.queries.FindEmployees(ctx, params)
+	var rows []sqlc.Employee
+	var total int64
+	var err error
+	if spec.Specialty != nil {
+		rows, err = r.queries.FindEmployeesBySpeciality(ctx, sqlc.FindEmployeesBySpecialityParams{Speciality: models.VeterinarianSpeciality(*spec.Specialty), Column2: activeFilter, Limit: limit, Offset: offset})
+		if err == nil {
+			total, err = r.queries.CountEmployeesBySpeciality(ctx, sqlc.CountEmployeesBySpecialityParams{Speciality: models.VeterinarianSpeciality(*spec.Specialty), Column2: activeFilter})
+		}
+	} else {
+		rows, err = r.queries.FindEmployees(ctx, sqlc.FindEmployeesParams{Column1: activeFilter, Limit: limit, Offset: offset})
+		if err == nil {
+			total, err = r.queries.CountEmployeesByActive(ctx, activeFilter)
+		}
+	}
 	if err != nil {
 		return p.Page[employees.Employee]{}, r.dbError(OpSelect, ErrMsgFindEmployeesBySpec, err)
-	}
-	total, err := r.queries.CountAllEmployees(ctx)
-	if err != nil {
-		return p.Page[employees.Employee]{}, r.dbError(OpCount, ErrMsgFindEmployeesBySpec, err)
 	}
 	items := make([]employees.Employee, len(rows))
 	for i := range rows {
 		items[i] = r.toEntity(rows[i])
 	}
 	pagReq := p.PaginationRequest{
-		Page:     pageNum,
+		Page:     pagination.Page,
 		PageSize: limit,
 	}
 	return p.NewPage(items, total, pagReq), nil
@@ -107,6 +119,7 @@ func (r *EmployeeSqlcRepository) GetActive(ctx context.Context, pagination p.Pag
 func (r *EmployeeSqlcRepository) GetBySpeciality(ctx context.Context, speciality employees.VetSpecialty, pagination p.Pagination) (p.Page[employees.Employee], error) {
 	params := sqlc.FindEmployeesBySpecialityParams{
 		Speciality: models.VeterinarianSpeciality(speciality),
+		Column2:    -1,
 		Limit:      pagination.Limit(),
 		Offset:     pagination.Offset(),
 	}
@@ -114,7 +127,7 @@ func (r *EmployeeSqlcRepository) GetBySpeciality(ctx context.Context, speciality
 	if err != nil {
 		return p.Page[employees.Employee]{}, r.dbError(OpSelect, ErrMsgFindEmployeesBySpec, err)
 	}
-	total, err := r.queries.CountEmployeesBySpeciality(ctx, models.VeterinarianSpeciality(speciality))
+	total, err := r.queries.CountEmployeesBySpeciality(ctx, sqlc.CountEmployeesBySpecialityParams{Speciality: models.VeterinarianSpeciality(speciality), Column2: -1})
 	if err != nil {
 		return p.Page[employees.Employee]{}, r.dbError(OpCount, ErrMsgFindEmployeesBySpec, err)
 	}
@@ -166,10 +179,36 @@ func (r *EmployeeSqlcRepository) HardDelete(ctx context.Context, id employees.Em
 	return nil
 }
 
+func (r *EmployeeSqlcRepository) RestoreByID(ctx context.Context, id employees.EmployeeID) error {
+	if _, err := r.queries.RestoreEmployee(ctx, id.Int32()); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return r.notFoundError("id", id.String())
+		}
+		return r.dbError(OpUpdate, "failed to restore employee", err)
+	}
+	return nil
+}
+
 func (r *EmployeeSqlcRepository) CountBySpeciality(ctx context.Context, speciality employees.VetSpecialty) (int64, error) {
-	count, err := r.queries.CountEmployeesBySpeciality(ctx, models.VeterinarianSpeciality(speciality))
+	count, err := r.queries.CountEmployeesBySpeciality(ctx, sqlc.CountEmployeesBySpecialityParams{Speciality: models.VeterinarianSpeciality(speciality), Column2: -1})
 	if err != nil {
 		return 0, r.dbError(OpCount, "failed to count employees by speciality", err)
+	}
+	return count, nil
+}
+
+func (r *EmployeeSqlcRepository) CountByActive(ctx context.Context, active *bool) (int64, error) {
+	filter := int32(-1)
+	if active != nil {
+		if *active {
+			filter = 1
+		} else {
+			filter = 0
+		}
+	}
+	count, err := r.queries.CountEmployeesByActive(ctx, filter)
+	if err != nil {
+		return 0, r.dbError(OpCount, "failed to count employees by active status", err)
 	}
 	return count, nil
 }

@@ -18,7 +18,9 @@ type Payment struct {
 	Amount           shared.Money
 	Status           PaymentStatus
 	Method           PaymentMethod
-	TransactionID    *string
+	Reference        string
+	ReceiptNumber    *string
+	Reason           *string
 	Description      *string
 	DueDate          *time.Time
 	PaidAt           *time.Time
@@ -63,7 +65,7 @@ func (p *Payment) MarkAsPaid(ctx context.Context, transactionID string, paidAt t
 	}
 
 	if transactionID == "" {
-		return TransactionIDRequiredError(ctx, operation)
+		return ReferenceRequiredError(ctx, operation)
 	}
 
 	if paidAt.After(time.Now()) {
@@ -71,7 +73,7 @@ func (p *Payment) MarkAsPaid(ctx context.Context, transactionID string, paidAt t
 	}
 
 	p.Status = PaymentStatusPaid
-	p.TransactionID = &transactionID
+	p.Reference = transactionID
 	p.PaidAt = &paidAt
 	p.IncrementVersion()
 
@@ -105,7 +107,7 @@ func (p *Payment) RequestRefund(ctx context.Context, refundAmount shared.Money, 
 	p.RefundAmount = &refundAmount
 	now := time.Now()
 	p.RefundedAt = &now
-	p.FailureReason = &reason
+	p.Reason = &reason
 	p.UpdatedAt = now
 	p.IncrementVersion()
 
@@ -151,6 +153,7 @@ func (p *Payment) Cancel(ctx context.Context, reason string) error {
 	operation := "CancelPayment"
 
 	allowedStatuses := []PaymentStatus{
+		PaymentStatusAuthorized,
 		PaymentStatusPending,
 		PaymentStatusPaid,
 		PaymentStatusFailed,
@@ -165,7 +168,7 @@ func (p *Payment) Cancel(ctx context.Context, reason string) error {
 	}
 
 	p.Status = PaymentStatusCancelled
-	p.FailureReason = &reason
+	p.Reason = &reason
 	p.IncrementVersion()
 	return nil
 }
@@ -174,6 +177,7 @@ func (p *Payment) Pay(ctx context.Context, transactionID string) error {
 	operation := "PayPayment"
 
 	allowedStatuses := []PaymentStatus{
+		PaymentStatusAuthorized,
 		PaymentStatusFailed,
 		PaymentStatusPending,
 	}
@@ -183,12 +187,12 @@ func (p *Payment) Pay(ctx context.Context, transactionID string) error {
 	}
 
 	if transactionID == "" {
-		return TransactionIDRequiredError(ctx, operation)
+		return ReferenceRequiredError(ctx, operation)
 	}
 
 	now := time.Now()
 	p.Status = PaymentStatusPaid
-	p.TransactionID = &transactionID
+	p.Reference = transactionID
 	p.PaidAt = &now
 	p.IncrementVersion()
 	p.UpdatedAt = now
@@ -304,10 +308,8 @@ func (p *Payment) canTransitionStatus(allowedStatuses []PaymentStatus) bool {
 	return slices.Contains(allowedStatuses, p.Status)
 }
 
-func (p *Payment) RequiresPaymentProcessing() bool {
-	return p.Status == PaymentStatusPending &&
-		p.Method.RequiresOnlineProcessing()
-}
+// RequiresSettlement indicates that an authorized local ledger entry awaits staff recording.
+func (p *Payment) RequiresSettlement() bool { return p.Status == PaymentStatusAuthorized }
 
 func (p *Payment) CanBeRefunded() bool {
 	return p.Status == PaymentStatusPaid &&

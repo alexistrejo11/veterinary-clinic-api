@@ -8,6 +8,7 @@ SELECT * FROM session_prescriptions WHERE session_id = $1 ORDER BY created_at;
 SELECT sp.* FROM session_prescriptions sp
 JOIN medical_sessions ms ON ms.id = sp.session_id
 WHERE ms.pet_id = $1 AND ms.deleted_at IS NULL
+  AND (cardinality(sqlc.arg(employee_ids)::int[]) = 0 OR ms.employee_id = ANY(sqlc.arg(employee_ids)::int[]))
   AND (sp.duration_days IS NULL OR (sp.start_date + (sp.duration_days || ' days')::interval) >= CURRENT_DATE)
 ORDER BY sp.start_date DESC
 LIMIT $2 OFFSET $3;
@@ -16,6 +17,7 @@ LIMIT $2 OFFSET $3;
 SELECT COUNT(*) FROM session_prescriptions sp
 JOIN medical_sessions ms ON ms.id = sp.session_id
 WHERE ms.pet_id = $1 AND ms.deleted_at IS NULL
+  AND (cardinality(sqlc.arg(employee_ids)::int[]) = 0 OR ms.employee_id = ANY(sqlc.arg(employee_ids)::int[]))
   AND (sp.duration_days IS NULL OR (sp.start_date + (sp.duration_days || ' days')::interval) >= CURRENT_DATE);
 
 -- name: CreateSessionPrescription :one

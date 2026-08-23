@@ -32,6 +32,7 @@ type UpdateCustomerCommand struct {
 
 type CustomerService interface {
 	CreateCustomer(ctx context.Context, cmd CreateCustomerCommand) (Customer, error)
+	ActivateCustomerByUserID(ctx context.Context, userID uint) error
 	UpdateCustomer(ctx context.Context, cmd UpdateCustomerCommand) error
 	RestoreCustomer(ctx context.Context, id CustomerID) error
 	DeleteCustomer(ctx context.Context, id CustomerID) error
@@ -82,6 +83,18 @@ func (s *customerService) CreateCustomer(ctx context.Context, cmd CreateCustomer
 
 	customerCreated, err := s.repository.Save(ctx, customer)
 	return customerCreated, err
+}
+
+func (s *customerService) ActivateCustomerByUserID(ctx context.Context, userID uint) error {
+	customer, err := s.repository.FindByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err := customer.Activate(ctx); err != nil {
+		return err
+	}
+	_, err = s.repository.Save(ctx, customer)
+	return err
 }
 
 func (s *customerService) UpdateCustomer(ctx context.Context, cmd UpdateCustomerCommand) error {
@@ -142,7 +155,7 @@ func (s *customerService) RestoreCustomer(ctx context.Context, id CustomerID) er
 	if !exists {
 		return errors.EntityNotFoundError(ctx, "customer", id.String(), "RestoreCustomer")
 	}
-	return s.repository.HardDelete(ctx, id) // placeholder: adjust when proper restore is implemented
+	return s.repository.RestoreByID(ctx, id)
 }
 
 func (s *customerService) DeleteCustomer(ctx context.Context, id CustomerID) error {

@@ -17,4 +17,3 @@ type PaymentSpecification struct {
 	OverdueOnly   bool
 	page.Pagination
 }
-

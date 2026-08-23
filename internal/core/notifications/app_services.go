@@ -5,6 +5,7 @@ import (
 	"clinic-vet-api/internal/shared/page"
 	"context"
 	"fmt"
+	"time"
 )
 
 type NotificationService interface {
@@ -31,14 +32,44 @@ func NewNotificationService(repository NotificationRepository, emailSender Email
 }
 
 func (ns *notificationService) Send(ctx context.Context, notif *Notification) error {
+	if err := validateForDelivery(notif); err != nil {
+		return err
+	}
+	notif.Status = DeliveryStatusPending
+	if err := ns.repository.Create(ctx, notif); err != nil {
+		return err
+	}
+	var providerReference string
+	var err error
 	switch notif.Channel {
 	case NotificationChannelEmail:
-		return ns.emailSender.Send(ctx, notif)
+		if ns.emailSender == nil {
+			err = fmt.Errorf("email sender is required")
+		} else {
+			providerReference, err = ns.emailSender.Send(ctx, notif)
+		}
 	case NotificationChannelSMS:
-		return ns.smsSender.Send(ctx, notif)
+		if ns.smsSender == nil {
+			err = fmt.Errorf("SMS sender is required")
+		} else {
+			providerReference, err = ns.smsSender.Send(ctx, notif)
+		}
 	default:
-		return fmt.Errorf("unsupported notification channel: %s", notif.Channel)
+		err = fmt.Errorf("unsupported notification channel: %s", notif.Channel)
 	}
+	notif.ProviderReference = providerReference
+	notif.Attempts++
+	if err != nil {
+		notif.Status = DeliveryStatusFailed
+		notif.FailureMessage = err.Error()
+		if updateErr := ns.repository.UpdateDelivery(ctx, notif); updateErr != nil {
+			return fmt.Errorf("deliver notification: %w (record failure: %v)", err, updateErr)
+		}
+		return err
+	}
+	now := time.Now()
+	notif.Status, notif.SentAt = DeliveryStatusSent, &now
+	return ns.repository.UpdateDelivery(ctx, notif)
 }
 
 func (s *notificationService) GetNotificationsByUserID(ctx context.Context, userID shared.UserID, pagination page.Pagination) (page.Page[Notification], error) {
@@ -72,5 +103,30 @@ func (s *notificationService) GetNotificationByChannel(ctx context.Context, chan
 }
 
 func (s *notificationService) GenerateSummary(ctx context.Context, senderID string) ([]Notification, error) {
-	return []Notification{}, nil
+	return s.repository.FindSummary(ctx, senderID)
+}
+
+func validateForDelivery(notif *Notification) error {
+	if notif == nil {
+		return fmt.Errorf("notification is required")
+	}
+	if notif.UserID == "" {
+		return fmt.Errorf("notification recipient user ID is required")
+	}
+	if notif.Subject == "" || notif.Message == "" {
+		return fmt.Errorf("notification subject and message are required")
+	}
+	switch notif.Channel {
+	case NotificationChannelEmail:
+		if notif.UserEmail == "" {
+			return fmt.Errorf("notification recipient email is required")
+		}
+	case NotificationChannelSMS:
+		if notif.UserPhone == "" {
+			return fmt.Errorf("notification recipient phone is required")
+		}
+	default:
+		return fmt.Errorf("unsupported notification channel: %s", notif.Channel)
+	}
+	return nil
 }

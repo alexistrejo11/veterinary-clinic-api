@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	entityAuth = "auth"
+	entityAuth    = "auth"
 	entitySession = "session"
 )
 
@@ -100,12 +100,12 @@ func TwoFactorNotEnabledError(ctx context.Context, operation string) error {
 }
 
 // ErrRequiresTwoFactor is returned by Login when credentials are valid but 2FA must be completed.
-// HTTP layer can use errors.As to respond with 200 and body { "requires_2fa": true, "user_id": "..." }.
+// HTTP layer can use errors.As to respond with the opaque pre-authentication challenge.
 var ErrRequiresTwoFactor = &RequiresTwoFactorError{}
 
 // RequiresTwoFactorError holds user ID for the 2FA step
 type RequiresTwoFactorError struct {
-	UserID shared.UserID
+	ChallengeToken string
 }
 
 func (e *RequiresTwoFactorError) Error() string {

@@ -1,25 +1,13 @@
 -- name: FindPaymentByID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id,
-       description, due_date, paid_at, refunded_at, is_active, created_at,
-       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
-       failure_reason
-FROM payments
+SELECT payments.* FROM payments
 WHERE id = $1 AND deleted_at IS NULL;
 
--- name: FindPaymentByTransactionID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id,
-       description, due_date, paid_at, refunded_at, is_active, created_at,
-       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
-       failure_reason
-FROM payments
-WHERE transaction_id = $1 AND deleted_at IS NULL;
+-- name: FindPaymentByReference :one
+SELECT payments.* FROM payments
+WHERE reference = $1 AND deleted_at IS NULL;
 
 -- name: FindPaymentByIDAndCustomerID :one
-SELECT id, amount, currency, status, method, med_session_id, transaction_id,
-       description, due_date, paid_at, refunded_at, is_active, created_at,
-       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
-       failure_reason
-FROM payments
+SELECT payments.* FROM payments
 WHERE id = $1 AND paid_by_customer_id = $2 AND deleted_at IS NULL;
 
 -- name: CountPaymentsByCustomerID :one
@@ -40,9 +28,9 @@ WHERE due_date < CURRENT_TIMESTAMP
 SELECT COUNT(*) > 0 FROM payments
 WHERE id = $1 AND deleted_at IS NULL;
 
--- name: ExistsPaymentByTransactionID :one
+-- name: ExistsPaymentByReference :one
 SELECT COUNT(*) > 0 FROM payments
-WHERE transaction_id = $1 AND deleted_at IS NULL;
+WHERE reference = $1 AND deleted_at IS NULL;
 
 -- name: ExistsPendingPaymentByCustomerID :one
 SELECT COUNT(*) > 0 FROM payments
@@ -52,17 +40,14 @@ WHERE paid_by_customer_id = $1
 
 -- name: CreatePayment :one
 INSERT INTO payments (
-    amount, currency, status, method, transaction_id, description,
+    amount, currency, status, method, reference, description, appointment_id, reason,
     due_date, paid_at, refunded_at, paid_by_customer_id,
     med_session_id, invoice_id, refund_amount, failure_reason
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14
+    $11, $12, $13, $14, $15, $16
 )
-RETURNING id, amount, currency, status, method, med_session_id, transaction_id,
-          description, due_date, paid_at, refunded_at, is_active, created_at,
-          updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
-          failure_reason;
+RETURNING payments.*;
 
 -- name: UpdatePayment :one
 UPDATE payments SET
@@ -70,22 +55,49 @@ UPDATE payments SET
     currency = $3,
     status = $4,
     method = $5,
-    transaction_id = $6,
+    reference = $6,
     description = $7,
-    due_date = $8,
-    paid_at = $9,
-    refunded_at = $10,
-    paid_by_customer_id = $11,
-    med_session_id = $12,
-    invoice_id = $13,
-    refund_amount = $14,
-    failure_reason = $15,
+    appointment_id = $8,
+    reason = $9,
+    due_date = $10,
+    paid_at = $11,
+    refunded_at = $12,
+    paid_by_customer_id = $13,
+    med_session_id = $14,
+    invoice_id = $15,
+    refund_amount = $16,
+    failure_reason = $17,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, amount, currency, status, method, med_session_id, transaction_id,
-          description, due_date, paid_at, refunded_at, is_active, created_at,
-          updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
-          failure_reason;
+RETURNING payments.*;
+
+-- name: SettleAuthorizedPayment :one
+UPDATE payments SET
+    status = 'paid',
+    paid_at = CURRENT_TIMESTAMP,
+    receipt_number = $2,
+    reason = $3,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND status IN ('authorized', 'pending', 'overdue') AND deleted_at IS NULL
+RETURNING payments.*;
+
+-- name: CancelAuthorizedPayment :one
+UPDATE payments SET
+    status = 'cancelled',
+    reason = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND status IN ('authorized', 'pending', 'overdue') AND deleted_at IS NULL
+RETURNING payments.*;
+
+-- name: RefundSettledPayment :one
+UPDATE payments SET
+    status = 'refunded',
+    refunded_at = CURRENT_TIMESTAMP,
+    refund_amount = amount,
+    reason = $2,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND status = 'paid' AND deleted_at IS NULL
+RETURNING payments.*;
 
 -- name: SoftDeletePayment :exec
 UPDATE payments SET
@@ -104,11 +116,7 @@ WHERE status = 'paid'
   AND deleted_at IS NULL;
 
 -- name: FindPaymentsBySpecification :many
-SELECT id, amount, currency, status, method, med_session_id, transaction_id,
-       description, due_date, paid_at, refunded_at, is_active, created_at,
-       updated_at, deleted_at, paid_by_customer_id, invoice_id, refund_amount,
-       failure_reason
-FROM payments
+SELECT payments.* FROM payments
 WHERE deleted_at IS NULL
   AND ($1::int IS NULL OR paid_by_customer_id = $1)
   AND ($2::payment_status IS NULL OR status = $2)
@@ -128,4 +136,3 @@ WHERE deleted_at IS NULL
   AND ($4::timestamptz IS NULL OR created_at >= $4)
   AND ($5::timestamptz IS NULL OR created_at <= $5)
   AND (NOT $6::boolean OR (due_date < CURRENT_TIMESTAMP AND status NOT IN ('paid','refunded','cancelled')));
-

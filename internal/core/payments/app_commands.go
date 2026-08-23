@@ -7,15 +7,18 @@ import (
 )
 
 type CancelPaymentCommand struct {
-	ID PaymentID
+	ID     PaymentID
+	Reason string
 }
 
 type ProcessPaymentCommand struct {
-	ID PaymentID
+	ID     PaymentID
+	Reason string
 }
 
 type RefundPaymentCommand struct {
-	ID PaymentID
+	ID     PaymentID
+	Reason string
 }
 
 type DeletePaymentCommand struct {
@@ -27,7 +30,8 @@ type CreatePaymentCommand struct {
 	Currency      string
 	Status        PaymentStatus
 	Method        PaymentMethod
-	TransactionID string
+	Reference     string
+	Reason        string
 	Description   string
 	DueDate       time.Time
 	CustomerID    customers.CustomerID
@@ -41,7 +45,7 @@ type UpdatePaymentCommand struct {
 	Currency      string
 	Status        PaymentStatus
 	Method        PaymentMethod
-	TransactionID string
+	Reference     string
 	Description   string
 	DueDate       time.Time
 	CustomerID    customers.CustomerID

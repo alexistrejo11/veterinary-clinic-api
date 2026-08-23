@@ -2,6 +2,7 @@ package repository
 
 import (
 	"clinic-vet-api/database/models"
+	"clinic-vet-api/database/sqlc"
 	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/employees"
@@ -9,7 +10,6 @@ import (
 	customErr "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/mapper"
 	p "clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/database/sqlc"
 	"context"
 	"database/sql"
 	"errors"
@@ -34,7 +34,10 @@ func (r *SqlcAppointmentRepository) Find(
 	ctx context.Context,
 	spec *appointments.AppointmentSpecification,
 ) (p.Page[appointments.Appointment], error) {
+	pagination := p.FromSpecPagination(spec.Pagination).WithDefaults()
 	params := spec.ToSearchParams()
+	params.Limit = pagination.Limit()
+	params.Offset = pagination.Offset()
 	var service string
 	if params.Service != nil {
 		service = *params.Service
@@ -81,12 +84,6 @@ func (r *SqlcAppointmentRepository) Find(
 	total, err := r.queries.CountAppointmentsBySpec(ctx, countParams)
 	if err != nil {
 		return p.Page[appointments.Appointment]{}, err
-	}
-
-	// Fix pagination to have default values if not set
-	pagination := p.PaginationRequest{
-		PageSize: 10,
-		Page:     1,
 	}
 
 	return p.NewPage(appt, total, pagination), nil
@@ -163,7 +160,7 @@ func (r *SqlcAppointmentRepository) Save(
 	ctx context.Context,
 	appointment *appointments.Appointment,
 ) error {
-	if appointment.ID.IsZero() {
+	if appointment.ID.IntegerID == nil || appointment.ID.IsZero() {
 		return r.create(ctx, appointment)
 	}
 	return r.update(ctx, appointment)
@@ -218,10 +215,11 @@ func (r *SqlcAppointmentRepository) Count(ctx context.Context, spec *appointment
 func (r *SqlcAppointmentRepository) create(ctx context.Context, appointment *appointments.Appointment) error {
 	params := r.toCreateParams(appointment)
 
-	_, err := r.queries.CreateAppointment(ctx, params)
+	created, err := r.queries.CreateAppointment(ctx, params)
 	if err != nil {
 		return r.dbError(OpInsert, ErrMsgCreateAppointment, err)
 	}
+	*appointment = r.rowToEntity(created)
 
 	return nil
 }
@@ -229,10 +227,11 @@ func (r *SqlcAppointmentRepository) create(ctx context.Context, appointment *app
 func (r *SqlcAppointmentRepository) update(ctx context.Context, appointment *appointments.Appointment) error {
 	params := r.toUpdateParams(appointment)
 
-	_, err := r.queries.UpdateAppointment(ctx, params)
+	updated, err := r.queries.UpdateAppointment(ctx, params)
 	if err != nil {
 		return r.dbError(OpUpdate, fmt.Sprintf("%s with ID %d", ErrMsgUpdateAppointment, appointment.ID.Value()), err)
 	}
+	*appointment = r.rowToEntity(updated)
 
 	return nil
 }
@@ -285,15 +284,21 @@ func (r *SqlcAppointmentRepository) rowToEntity(row sqlc.Appointment) appointmen
 	if row.Notes.Valid {
 		notes = &row.Notes.String
 	}
+	var cancellationReason *string
+	if row.CancellationReason.Valid {
+		cancellationReason = &row.CancellationReason.String
+	}
 
 	appointment := appointments.Appointment{
-		CustomerID:    customers.NewCustomerID(uint(row.CustomerID)),
-		EmployeeID:    employeeID,
-		PetID:         pets.NewPetID(uint(row.PetID)),
-		ScheduledDate: row.ScheduledDate.Time,
-		Status:        appointments.AppointmentStatus(row.Status),
-		Service:       appointments.ClinicService(row.ClinicService),
-		Notes:         notes,
+		CustomerID:         customers.NewCustomerID(uint(row.CustomerID)),
+		EmployeeID:         employeeID,
+		PetID:              pets.NewPetID(uint(row.PetID)),
+		ScheduledDate:      row.ScheduledDate.Time,
+		Status:             appointments.AppointmentStatus(row.Status),
+		Service:            appointments.ClinicService(row.ClinicService),
+		Reason:             appointments.VisitReason(row.Reason.String),
+		Notes:              notes,
+		CancellationReason: cancellationReason,
 	}
 	appointment.SetID(appointments.NewAppointmentID(uint(row.ID)))
 	appointment.SetTimeStamps(row.CreatedAt.Time, row.UpdatedAt.Time)
@@ -320,6 +325,7 @@ func (r *SqlcAppointmentRepository) specRowsToEntities(rows []sqlc.FindAppointme
 			ScheduledDate: row.ScheduledDate.Time,
 			Status:        appointments.AppointmentStatus(row.Status),
 			Service:       appointments.ClinicService(row.ClinicService),
+			Reason:        appointments.VisitReason(row.Reason.String),
 			Notes: func() *string {
 				if row.Notes.Valid {
 					return &row.Notes.String
@@ -327,7 +333,15 @@ func (r *SqlcAppointmentRepository) specRowsToEntities(rows []sqlc.FindAppointme
 					return nil
 				}
 			}(),
+			CancellationReason: func() *string {
+				if row.CancellationReason.Valid {
+					return &row.CancellationReason.String
+				}
+				return nil
+			}(),
 		}
+		appts[i].SetID(appointments.NewAppointmentID(uint(row.ID)))
+		appts[i].SetTimeStamps(row.CreatedAt.Time, row.UpdatedAt.Time)
 	}
 	return appts
 }
@@ -339,6 +353,7 @@ func (r *SqlcAppointmentRepository) toCreateParams(appt *appointments.Appointmen
 		ScheduledDate: pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
 		Status:        models.AppointmentStatus(string(appt.Status)),
 		ClinicService: models.ClinicService(string(appt.Service.String())),
+		Reason:        pgtype.Text{String: appt.Reason.String(), Valid: appt.Reason != ""},
 	}
 
 	if appt.EmployeeID != nil {
@@ -358,18 +373,35 @@ func (r *SqlcAppointmentRepository) toCreateParams(appt *appointments.Appointmen
 	} else {
 		params.Notes = pgtype.Text{Valid: false}
 	}
+	if appt.CancellationReason != nil {
+		params.CancellationReason = pgtype.Text{String: *appt.CancellationReason, Valid: true}
+	}
 
 	return params
 }
 
 func (r *SqlcAppointmentRepository) toUpdateParams(appt *appointments.Appointment) sqlc.UpdateAppointmentParams {
+	var employeeID int32
+	if appt.EmployeeID != nil {
+		employeeID = int32(appt.EmployeeID.Value())
+	}
+	var notes string
+	if appt.Notes != nil {
+		notes = *appt.Notes
+	}
+	var cancellationReason string
+	if appt.CancellationReason != nil {
+		cancellationReason = *appt.CancellationReason
+	}
 	return sqlc.UpdateAppointmentParams{
-		ID:            int32(appt.ID.Value()),
-		CustomerID:    int32(appt.CustomerID.Value()),
-		EmployeeID:    pgtype.Int4{Int32: int32(appt.EmployeeID.Value()), Valid: appt.EmployeeID != nil},
-		PetID:         int32(appt.PetID.Value()),
-		ScheduledDate: pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
-		Notes:         pgtype.Text{String: *appt.Notes, Valid: appt.Notes != nil},
-		Status:        models.AppointmentStatus(string(appt.Status)),
+		ID:                 int32(appt.ID.Value()),
+		CustomerID:         int32(appt.CustomerID.Value()),
+		EmployeeID:         pgtype.Int4{Int32: employeeID, Valid: appt.EmployeeID != nil},
+		PetID:              int32(appt.PetID.Value()),
+		ScheduledDate:      pgtype.Timestamptz{Time: appt.ScheduledDate, Valid: true},
+		Notes:              pgtype.Text{String: notes, Valid: appt.Notes != nil},
+		Reason:             pgtype.Text{String: appt.Reason.String(), Valid: appt.Reason != ""},
+		CancellationReason: pgtype.Text{String: cancellationReason, Valid: appt.CancellationReason != nil},
+		Status:             models.AppointmentStatus(string(appt.Status)),
 	}
 }

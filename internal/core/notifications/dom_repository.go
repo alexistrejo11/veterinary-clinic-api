@@ -15,4 +15,6 @@ type NotificationRepository interface {
 	FindByUser(ctx context.Context, userID shared.UserID, pagination page.Pagination) (page.Page[Notification], error)
 	FindByType(ctx context.Context, notificationType string, pagination page.Pagination) (page.Page[Notification], error)
 	FindByChannel(ctx context.Context, channel string, pagination page.Pagination) (page.Page[Notification], error)
+	UpdateDelivery(ctx context.Context, notification *Notification) error
+	FindSummary(ctx context.Context, senderID string) ([]Notification, error)
 }

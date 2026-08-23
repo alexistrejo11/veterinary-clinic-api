@@ -2,12 +2,13 @@ package repository
 
 import (
 	"clinic-vet-api/database/models"
+	"clinic-vet-api/database/sqlc"
+	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/core/payments"
 	customErr "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/database/sqlc"
 	"context"
 	"fmt"
 	"time"
@@ -36,8 +37,8 @@ func (r *PaymentSqlcRepository) GetByID(ctx context.Context, id payments.Payment
 	return r.toEntity(row), nil
 }
 
-func (r *PaymentSqlcRepository) GetByTransactionID(ctx context.Context, transactionID string) (payments.Payment, error) {
-	row, err := r.queries.FindPaymentByTransactionID(ctx, r.pgMap.PgText.FromString(transactionID))
+func (r *PaymentSqlcRepository) GetByReference(ctx context.Context, reference string) (payments.Payment, error) {
+	row, err := r.queries.FindPaymentByReference(ctx, r.pgMap.PgText.FromString(reference))
 	if err != nil {
 		return payments.Payment{}, r.dbError(OpSelect, ErrMsgFindPaymentByTransactionID, err)
 	}
@@ -134,12 +135,36 @@ func (r *PaymentSqlcRepository) ExistsByID(ctx context.Context, id payments.Paym
 	return exists, nil
 }
 
-func (r *PaymentSqlcRepository) ExistsByTransactionID(ctx context.Context, transactionID string) (bool, error) {
-	exists, err := r.queries.ExistsPaymentByTransactionID(ctx, r.pgMap.PgText.FromString(transactionID))
+func (r *PaymentSqlcRepository) ExistsByReference(ctx context.Context, reference string) (bool, error) {
+	exists, err := r.queries.ExistsPaymentByReference(ctx, r.pgMap.PgText.FromString(reference))
 	if err != nil {
 		return false, r.dbError(OpSelect, ErrMsgCheckPaymentExists, err)
 	}
 	return exists, nil
+}
+
+func (r *PaymentSqlcRepository) SettleAuthorized(ctx context.Context, id payments.PaymentID, receiptNumber, reason string) (payments.Payment, error) {
+	row, err := r.queries.SettleAuthorizedPayment(ctx, sqlc.SettleAuthorizedPaymentParams{ID: id.Int32(), ReceiptNumber: r.pgMap.PgText.FromString(receiptNumber), Reason: r.pgMap.PgText.FromString(reason)})
+	if err != nil {
+		return payments.Payment{}, r.dbError(OpUpdate, ErrMsgUpdatePayment, err)
+	}
+	return r.toEntity(row), nil
+}
+
+func (r *PaymentSqlcRepository) CancelAuthorized(ctx context.Context, id payments.PaymentID, reason string) (payments.Payment, error) {
+	row, err := r.queries.CancelAuthorizedPayment(ctx, sqlc.CancelAuthorizedPaymentParams{ID: id.Int32(), Reason: r.pgMap.PgText.FromString(reason)})
+	if err != nil {
+		return payments.Payment{}, r.dbError(OpUpdate, ErrMsgUpdatePayment, err)
+	}
+	return r.toEntity(row), nil
+}
+
+func (r *PaymentSqlcRepository) RefundSettled(ctx context.Context, id payments.PaymentID, reason string) (payments.Payment, error) {
+	row, err := r.queries.RefundSettledPayment(ctx, sqlc.RefundSettledPaymentParams{ID: id.Int32(), Reason: r.pgMap.PgText.FromString(reason)})
+	if err != nil {
+		return payments.Payment{}, r.dbError(OpUpdate, ErrMsgUpdatePayment, err)
+	}
+	return r.toEntity(row), nil
 }
 
 func (r *PaymentSqlcRepository) Save(ctx context.Context, payment *payments.Payment) error {
@@ -203,15 +228,22 @@ func (r *PaymentSqlcRepository) ExistsPendingByCustomerID(ctx context.Context, c
 
 func (r *PaymentSqlcRepository) create(ctx context.Context, payment *payments.Payment) error {
 	params := sqlc.CreatePaymentParams{
-		Amount:       r.pgMap.PgNumeric.ToNumeric(payment.Amount),
-		Currency:     payment.Amount.Currency(),
-		Status:       models.PaymentStatus(payment.Status.String()),
-		Method:       models.PaymentMethod(payment.Method.String()),
-		TransactionID: r.pgMap.PgText.FromStringPtr(payment.TransactionID),
-		Description:    r.pgMap.PgText.FromStringPtr(payment.Description),
-		DueDate:        r.pgMap.PgTimestamptz.FromTimePtr(payment.DueDate),
-		PaidAt:         r.pgMap.PgTimestamptz.FromTimePtr(payment.PaidAt),
-		RefundedAt:     r.pgMap.PgTimestamptz.FromTimePtr(payment.RefundedAt),
+		Amount:      r.pgMap.PgNumeric.ToNumeric(payment.Amount),
+		Currency:    payment.Amount.Currency(),
+		Status:      models.PaymentStatus(payment.Status.String()),
+		Method:      models.PaymentMethod(payment.Method.String()),
+		Reference:   r.pgMap.PgText.FromString(payment.Reference),
+		Description: r.pgMap.PgText.FromStringPtr(payment.Description),
+		AppointmentID: func() pgtype.Int4 {
+			if payment.AppointmentID != nil {
+				return r.pgMap.PgInt4.FromInt32(payment.AppointmentID.Int32())
+			}
+			return pgtype.Int4{}
+		}(),
+		Reason:           r.pgMap.PgText.FromStringPtr(payment.Reason),
+		DueDate:          r.pgMap.PgTimestamptz.FromTimePtr(payment.DueDate),
+		PaidAt:           r.pgMap.PgTimestamptz.FromTimePtr(payment.PaidAt),
+		RefundedAt:       r.pgMap.PgTimestamptz.FromTimePtr(payment.RefundedAt),
 		PaidByCustomerID: r.pgMap.PgInt4.FromCustomerIDPtr(&payment.PaidFromCustomer),
 		MedSessionID:     pgtype.Int4{Valid: false},
 		InvoiceID:        r.pgMap.PgText.FromStringPtr(payment.InvoiceID),
@@ -235,16 +267,23 @@ func (r *PaymentSqlcRepository) create(ctx context.Context, payment *payments.Pa
 
 func (r *PaymentSqlcRepository) update(ctx context.Context, payment *payments.Payment) error {
 	params := sqlc.UpdatePaymentParams{
-		ID:              payment.ID.Int32(),
-		Amount:          r.pgMap.PgNumeric.ToNumeric(payment.Amount),
-		Currency:        payment.Amount.Currency(),
-		Status:          models.PaymentStatus(payment.Status.String()),
-		Method:          models.PaymentMethod(payment.Method.String()),
-		TransactionID:   r.pgMap.PgText.FromStringPtr(payment.TransactionID),
-		Description:     r.pgMap.PgText.FromStringPtr(payment.Description),
-		DueDate:         r.pgMap.PgTimestamptz.FromTimePtr(payment.DueDate),
-		PaidAt:          r.pgMap.PgTimestamptz.FromTimePtr(payment.PaidAt),
-		RefundedAt:      r.pgMap.PgTimestamptz.FromTimePtr(payment.RefundedAt),
+		ID:          payment.ID.Int32(),
+		Amount:      r.pgMap.PgNumeric.ToNumeric(payment.Amount),
+		Currency:    payment.Amount.Currency(),
+		Status:      models.PaymentStatus(payment.Status.String()),
+		Method:      models.PaymentMethod(payment.Method.String()),
+		Reference:   r.pgMap.PgText.FromString(payment.Reference),
+		Description: r.pgMap.PgText.FromStringPtr(payment.Description),
+		AppointmentID: func() pgtype.Int4 {
+			if payment.AppointmentID != nil {
+				return r.pgMap.PgInt4.FromInt32(payment.AppointmentID.Int32())
+			}
+			return pgtype.Int4{}
+		}(),
+		Reason:           r.pgMap.PgText.FromStringPtr(payment.Reason),
+		DueDate:          r.pgMap.PgTimestamptz.FromTimePtr(payment.DueDate),
+		PaidAt:           r.pgMap.PgTimestamptz.FromTimePtr(payment.PaidAt),
+		RefundedAt:       r.pgMap.PgTimestamptz.FromTimePtr(payment.RefundedAt),
 		PaidByCustomerID: r.pgMap.PgInt4.FromCustomerIDPtr(&payment.PaidFromCustomer),
 		MedSessionID:     pgtype.Int4{Valid: false},
 		InvoiceID:        r.pgMap.PgText.FromStringPtr(payment.InvoiceID),
@@ -268,7 +307,9 @@ func (r *PaymentSqlcRepository) update(ctx context.Context, payment *payments.Pa
 func (r *PaymentSqlcRepository) toEntity(row sqlc.Payment) payments.Payment {
 	amountMoney := r.pgMap.PgNumeric.ToMoney(row.Amount, row.Currency)
 
-	var transactionID *string = r.pgMap.PgText.ToStringPtr(row.TransactionID)
+	reference := r.pgMap.PgText.ToString(row.Reference)
+	receiptNumber := r.pgMap.PgText.ToStringPtr(row.ReceiptNumber)
+	reason := r.pgMap.PgText.ToStringPtr(row.Reason)
 	var description *string = r.pgMap.PgText.ToStringPtr(row.Description)
 	var dueDate *time.Time = r.pgMap.PgTimestamptz.ToTimePtr(row.DueDate)
 	var paidAt *time.Time = r.pgMap.PgTimestamptz.ToTimePtr(row.PaidAt)
@@ -287,18 +328,26 @@ func (r *PaymentSqlcRepository) toEntity(row sqlc.Payment) payments.Payment {
 	}
 
 	var deletedAt *time.Time = r.pgMap.PgTimestamptz.ToTimePtr(row.DeletedAt)
+	var appointmentID *appointments.AppointmentID
+	if row.AppointmentID.Valid {
+		id := appointments.NewAppointmentID(uint(row.AppointmentID.Int32))
+		appointmentID = &id
+	}
 
 	entity := payments.Payment{
 		Amount:           amountMoney,
 		Status:           payments.PaymentStatus(row.Status),
 		Method:           payments.PaymentMethod(row.Method),
-		TransactionID:    transactionID,
+		Reference:        reference,
+		ReceiptNumber:    receiptNumber,
+		Reason:           reason,
 		Description:      description,
 		DueDate:          dueDate,
 		PaidAt:           paidAt,
 		RefundedAt:       refundedAt,
 		IsActive:         row.IsActive,
 		PaidFromCustomer: paidFrom,
+		AppointmentID:    appointmentID,
 		InvoiceID:        invoiceID,
 		RefundAmount:     refundAmount,
 		FailureReason:    failureReason,

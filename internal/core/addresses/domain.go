@@ -5,6 +5,7 @@ import (
 	"clinic-vet-api/internal/shared/page"
 	"context"
 	"fmt"
+	"strings"
 )
 
 type Address struct {
@@ -58,9 +59,13 @@ func (c Country) IsValid() bool {
 }
 
 func ParseCountry(country string) (Country, error) {
-	switch country {
-	case "USA":
+	switch strings.ToLower(strings.TrimSpace(country)) {
+	case "usa", "us", "united states", "united states of america":
 		return USA, nil
+	case "mexico":
+		return Mexico, nil
+	case "canada":
+		return Canada, nil
 	}
 	return Country(""), fmt.Errorf("invalid country")
 }

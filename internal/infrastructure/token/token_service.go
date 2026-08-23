@@ -14,23 +14,25 @@ import (
 )
 
 const (
-	redisPrefixVerification   = "auth:verification:"
-	redisPrefixPasswordReset  = "auth:password_reset:"
-	redisPrefixRefreshValid   = "auth:refresh:valid:"
-	redisPrefixRefreshBlacklist = "auth:refresh:blacklist:"
+	redisPrefixVerification       = "auth:verification:"
+	redisPrefixPasswordReset      = "auth:password_reset:"
+	redisPrefixTwoFactorChallenge = "auth:two_factor_challenge:"
+	redisPrefixRefreshValid       = "auth:refresh:valid:"
+	redisPrefixRefreshBlacklist   = "auth:refresh:blacklist:"
 
-	accessTokenTTL   = 15 * time.Minute
-	refreshTokenTTL  = 7 * 24 * time.Hour
-	verificationTTL  = 24 * time.Hour
-	passwordResetTTL  = 1 * time.Hour
+	accessTokenTTL        = 15 * time.Minute
+	refreshTokenTTL       = 7 * 24 * time.Hour
+	verificationTTL       = 24 * time.Hour
+	passwordResetTTL      = 1 * time.Hour
+	twoFactorChallengeTTL = 5 * time.Minute
 )
 
 // TokenServiceImpl implements auth.TokenService using JWT for access/refresh and Redis for verification/password-reset tokens.
 type TokenServiceImpl struct {
-	redis       *redis.Client
-	jwtKey      []byte
-	accessTTL   time.Duration
-	refreshTTL  time.Duration
+	redis      *redis.Client
+	jwtKey     []byte
+	accessTTL  time.Duration
+	refreshTTL time.Duration
 }
 
 // Config configures TokenServiceImpl.
@@ -77,6 +79,8 @@ func (s *TokenServiceImpl) CreateToken(ctx context.Context, userClaims map[strin
 		return s.createRedisToken(ctx, userClaims, redisPrefixVerification, verificationTTL, tokenType)
 	case auth.TokenTypePasswordReset:
 		return s.createRedisToken(ctx, userClaims, redisPrefixPasswordReset, passwordResetTTL, tokenType)
+	case auth.TokenTypeTwoFactorChallenge:
+		return s.createRedisToken(ctx, userClaims, redisPrefixTwoFactorChallenge, twoFactorChallengeTTL, tokenType)
 	default:
 		return auth.Token{}, fmt.Errorf("unsupported token type: %s", tokenType)
 	}
@@ -93,9 +97,9 @@ func (s *TokenServiceImpl) createAccessToken(ctx context.Context, claims map[str
 		auth.ClaimEmail:     claims[auth.ClaimEmail],
 		auth.ClaimRole:      claims[auth.ClaimRole],
 		auth.ClaimTokenType: string(auth.TokenTypeAccessToken),
-		auth.ClaimJTI:      jti,
-		auth.ClaimIat:      now.Unix(),
-		auth.ClaimExp:      exp.Unix(),
+		auth.ClaimJTI:       jti,
+		auth.ClaimIat:       now.Unix(),
+		auth.ClaimExp:       exp.Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
@@ -126,9 +130,9 @@ func (s *TokenServiceImpl) createRefreshToken(ctx context.Context, claims map[st
 	c := jwt.MapClaims{
 		auth.ClaimUserID:    userID,
 		auth.ClaimTokenType: string(auth.TokenTypeRefreshToken),
-		auth.ClaimJTI:      jti,
-		auth.ClaimIat:      now.Unix(),
-		auth.ClaimExp:      exp.Unix(),
+		auth.ClaimJTI:       jti,
+		auth.ClaimIat:       now.Unix(),
+		auth.ClaimExp:       exp.Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
@@ -176,6 +180,8 @@ func (s *TokenServiceImpl) GetTokenClaims(ctx context.Context, tokenStr string, 
 		return s.getRedisClaims(ctx, redisPrefixVerification+tokenStr)
 	case auth.TokenTypePasswordReset:
 		return s.getRedisClaims(ctx, redisPrefixPasswordReset+tokenStr)
+	case auth.TokenTypeTwoFactorChallenge:
+		return s.getRedisClaims(ctx, redisPrefixTwoFactorChallenge+tokenStr)
 	default:
 		return nil, fmt.Errorf("unsupported token type: %s", tokenType)
 	}
@@ -243,6 +249,9 @@ func (s *TokenServiceImpl) VerifyToken(ctx context.Context, tokenStr string, tok
 	case auth.TokenTypePasswordReset:
 		_, err := s.getRedisClaims(ctx, redisPrefixPasswordReset+tokenStr)
 		return err == nil, nil
+	case auth.TokenTypeTwoFactorChallenge:
+		_, err := s.getRedisClaims(ctx, redisPrefixTwoFactorChallenge+tokenStr)
+		return err == nil, nil
 	default:
 		return false, fmt.Errorf("unsupported token type: %s", tokenType)
 	}
@@ -265,11 +274,11 @@ func (s *TokenServiceImpl) RevokeToken(ctx context.Context, tokenStr string, tok
 	case auth.TokenTypeRefreshToken, auth.TokenJwtRefreshToken:
 		claims, err := s.getJWTClaims(tokenStr)
 		if err != nil {
-			return nil
+			return err
 		}
 		jti, _ := claims[auth.ClaimJTI].(string)
 		if jti == "" {
-			return nil
+			return errors.New("refresh token has no jti")
 		}
 		key := redisPrefixRefreshBlacklist + jti
 		return s.redis.Set(ctx, key, "1", s.refreshTTL).Err()
@@ -277,6 +286,8 @@ func (s *TokenServiceImpl) RevokeToken(ctx context.Context, tokenStr string, tok
 		return s.redis.Del(ctx, redisPrefixVerification+tokenStr).Err()
 	case auth.TokenTypePasswordReset:
 		return s.redis.Del(ctx, redisPrefixPasswordReset+tokenStr).Err()
+	case auth.TokenTypeTwoFactorChallenge:
+		return s.redis.Del(ctx, redisPrefixTwoFactorChallenge+tokenStr).Err()
 	case auth.TokenTypeAccessToken, auth.TokenJwtAccessToken:
 		return nil
 	default:

@@ -2,9 +2,11 @@
 package config
 
 import (
-	"clinic-vet-api/internal/infrastructure/http"
-	"clinic-vet-api/internal/middleware"
 	"clinic-vet-api/database/sqlc"
+	"clinic-vet-api/internal/infrastructure/http"
+	"clinic-vet-api/internal/infrastructure/notification"
+	"clinic-vet-api/internal/middleware"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -49,9 +51,6 @@ type ServerConfig struct {
 	ReadTimeout  time.Duration `json:"read_timeout"`
 	WriteTimeout time.Duration `json:"write_timeout"`
 	Environment  string        `json:"environment"`
-	EnableHTTPS  bool          `json:"enable_https"`
-	CertFile     string        `json:"cert_file"`
-	KeyFile      string        `json:"key_file"`
 }
 
 type ServicesConfig struct {
@@ -69,9 +68,8 @@ type AppConfig struct {
 
 // LoadSettings loads and validates all application settings
 func LoadSettings() (*AppSettings, error) {
-	// Load .env file if it exists
-	if err := godotenv.Load(); err != nil {
-		// Not fatal if .env doesn't exist
+	// Load .env when present (Compose injects env vars; the file is not in the image).
+	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		fmt.Printf("Warning: Could not load .env file: %v\n", err)
 	}
 
@@ -121,11 +119,6 @@ func loadServerConfig(config *ServerConfig) error {
 		return fmt.Errorf("invalid SERVER_WRITE_TIMEOUT: %w", err)
 	}
 	config.WriteTimeout = writeTimeout
-
-	// HTTPS Configuration
-	config.EnableHTTPS = getEnvAsBool("ENABLE_HTTPS", false)
-	config.CertFile = getEnvWithDefault("CERT_FILE", "./certs/cert.pem")
-	config.KeyFile = getEnvWithDefault("KEY_FILE", "./certs/key.pem")
 
 	return nil
 }
@@ -224,10 +217,31 @@ func BootstrapAPIModules(
 	queries *sqlc.Queries,
 	validator *validator.Validate,
 	redis *redis.Client,
-	jwtSecret string,
+	settings *AppSettings,
 ) error {
-	authMiddleware := middleware.NewAuthMiddleware(jwtSecret)
-	if err := http.Bootstrap(routerGroup, queries, validator, authMiddleware, redis, jwtSecret); err != nil {
+	if settings == nil {
+		return fmt.Errorf("application settings are required")
+	}
+	authMiddleware := middleware.NewAuthMiddleware(settings.Auth.JWTSecret)
+	emailConfig := notification.SMTPConfig{
+		Host:      settings.Services.Email.SMTPHost,
+		Port:      settings.Services.Email.SMTPPort,
+		Username:  settings.Services.Email.SMTPUsername,
+		Password:  settings.Services.Email.SMTPPassword,
+		FromEmail: settings.Services.Email.FromEmail,
+	}
+	if err := http.Bootstrap(
+		routerGroup,
+		queries,
+		validator,
+		authMiddleware,
+		redis,
+		settings.Auth.JWTSecret,
+		settings.Auth.TwoFactorEncryptionKey,
+		emailConfig,
+		GetTwilioClient(),
+		settings.Services.Twilio.FromPhone,
+	); err != nil {
 		return fmt.Errorf("failed to bootstrap API modules: %w", err)
 	}
 	return nil

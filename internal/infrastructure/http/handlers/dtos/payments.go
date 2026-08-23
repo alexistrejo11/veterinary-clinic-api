@@ -7,17 +7,17 @@ import (
 )
 
 // PaymentCreateRequest represents the body for creating a new payment record
-// @Description Amount, currency (3-letter), method, optional description/due_date/transaction_id/invoice_id, customer_id, optional appointment_id. Internal tracker only (no external gateway).
+// @Description Creates an authorized internal ledger entry. Reference is the caller's idempotency key; this API never sends a payment to an external processor.
 type PaymentCreateRequest struct {
-	Amount      float64   `json:"amount" binding:"required,gt=0"`
-	Currency    string    `json:"currency" binding:"required,len=3"`
-	Method      string    `json:"method" binding:"required"`
-	Description *string   `json:"description,omitempty" binding:"omitempty,max=500"`
+	Amount      float64    `json:"amount" binding:"required,gt=0"`
+	Currency    string     `json:"currency" binding:"required,len=3"`
+	Method      string     `json:"method" binding:"required"`
+	Description *string    `json:"description,omitempty" binding:"omitempty,max=500"`
 	DueDate     *time.Time `json:"due_date,omitempty" binding:"omitempty"`
 
-	// Optional external tracking information
-	TransactionID *string `json:"transaction_id,omitempty" binding:"omitempty"`
-	InvoiceID     *string `json:"invoice_id,omitempty" binding:"omitempty"`
+	Reference string  `json:"reference" binding:"required,max=255"`
+	Reason    *string `json:"reason,omitempty" binding:"omitempty,max=1000"`
+	InvoiceID *string `json:"invoice_id,omitempty" binding:"omitempty"`
 
 	// Relations
 	CustomerID    uint  `json:"customer_id" binding:"required"`
@@ -41,16 +41,16 @@ type PaymentUpdateRequest struct {
 type PaymentSearchRequest struct {
 	page.PaginationRequest
 
-	CustomerID   *uint      `json:"customer_id,omitempty"`
-	Status       *string    `json:"status,omitempty"`
-	Method       *string    `json:"method,omitempty"`
-	FromCreated  *time.Time `json:"from_created_at,omitempty"`
-	ToCreated    *time.Time `json:"to_created_at,omitempty"`
-	OverdueOnly  bool       `json:"overdue_only,omitempty"`
+	CustomerID  *uint      `json:"customer_id,omitempty" form:"customer_id"`
+	Status      *string    `json:"status,omitempty" form:"status"`
+	Method      *string    `json:"method,omitempty" form:"method"`
+	FromCreated *time.Time `json:"from_created_at,omitempty" form:"from_created_at"`
+	ToCreated   *time.Time `json:"to_created_at,omitempty" form:"to_created_at"`
+	OverdueOnly bool       `json:"overdue_only,omitempty" form:"overdue_only"`
 }
 
 // PaymentResponse represents the HTTP response DTO for a payment
-// @Description Payment entity: id, amount, currency, status, method, transaction_id, description, due_date, paid_at, customer_id, timestamps, optional refund/delete info.
+// @Description Internal ledger payment with caller reference and locally issued receipt number once settled.
 type PaymentResponse struct {
 	ID uint `json:"id"`
 
@@ -63,14 +63,16 @@ type PaymentResponse struct {
 	Method        string `json:"method"`
 	MethodDisplay string `json:"method_display"`
 
-	TransactionID *string    `json:"transaction_id,omitempty"`
+	Reference     string     `json:"reference"`
+	ReceiptNumber *string    `json:"receipt_number,omitempty"`
+	Reason        *string    `json:"reason,omitempty"`
 	Description   *string    `json:"description,omitempty"`
 	DueDate       *time.Time `json:"due_date,omitempty"`
 	PaidAt        *time.Time `json:"paid_at,omitempty"`
 	RefundedAt    *time.Time `json:"refunded_at,omitempty"`
 	IsActive      bool       `json:"is_active"`
 
-	CustomerID    uint   `json:"customer_id"`
+	CustomerID    uint    `json:"customer_id"`
 	InvoiceID     *string `json:"invoice_id,omitempty"`
 	FailureReason *string `json:"failure_reason,omitempty"`
 
@@ -80,4 +82,3 @@ type PaymentResponse struct {
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
-

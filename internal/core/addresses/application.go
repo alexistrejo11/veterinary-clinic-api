@@ -89,24 +89,6 @@ func (s *addressService) CreateAddress(ctx context.Context, cmd CreateAddressCom
 		return Address{}, err
 	}
 
-	// If this address should be default, clear default from others.
-	if created.IsDefault {
-		addresses, err := s.repository.GetAllByUserID(ctx, created.UserID)
-		if err != nil {
-			return Address{}, err
-		}
-		for i := range addresses {
-			if addresses[i].ID.Value() == created.ID.Value() {
-				addresses[i].IsDefault = true
-			} else if addresses[i].IsDefault {
-				addresses[i].IsDefault = false
-			}
-		}
-		if err := s.repository.BulkUpdate(ctx, addresses); err != nil {
-			return Address{}, err
-		}
-	}
-
 	return created, nil
 }
 
@@ -152,45 +134,27 @@ func (s *addressService) UpdateAddress(ctx context.Context, cmd UpdateAddressCom
 		return err
 	}
 
-	updated, err := s.repository.Save(ctx, address)
-	if err != nil {
-		return err
-	}
-
-	// If this address became default, clear default from others for this customer.
-	if cmd.IsDefault != nil && *cmd.IsDefault {
-		addresses, err := s.repository.GetAllByUserID(ctx, updated.UserID)
-		if err != nil {
-			return err
-		}
-		for i := range addresses {
-			if addresses[i].ID.Value() == updated.ID.Value() {
-				addresses[i].IsDefault = true
-			} else if addresses[i].IsDefault {
-				addresses[i].IsDefault = false
-			}
-		}
-		if err := s.repository.BulkUpdate(ctx, addresses); err != nil {
-			return err
-		}
-	}
-
-	// Optional: prevent removing the last default address.
+	// Do not persist an invalid state before checking whether another default exists.
 	if cmd.IsDefault != nil && !*cmd.IsDefault && originalWasDefault {
-		addresses, err := s.repository.GetAllByUserID(ctx, updated.UserID)
+		addresses, err := s.repository.GetAllByUserID(ctx, address.UserID)
 		if err != nil {
 			return err
 		}
-		hasDefault := false
-		for _, a := range addresses {
-			if a.IsDefault {
-				hasDefault = true
+		hasOtherDefault := false
+		for _, candidate := range addresses {
+			if candidate.ID.Value() != address.ID.Value() && candidate.IsDefault {
+				hasOtherDefault = true
 				break
 			}
 		}
-		if !hasDefault && len(addresses) > 0 {
-			return DefaultAddressRequiredError(ctx, updated.UserID, op)
+		if !hasOtherDefault {
+			return DefaultAddressRequiredError(ctx, address.UserID, op)
 		}
+	}
+
+	_, err = s.repository.Save(ctx, address)
+	if err != nil {
+		return err
 	}
 
 	return nil

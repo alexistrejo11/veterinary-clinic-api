@@ -5,7 +5,6 @@ import (
 	"encoding/base32"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -306,8 +305,22 @@ func ValidatePasswordStrength(plainPassword string) error {
 		return errors.New("password must be between 8 and 128 characters long")
 	}
 
-	rePattern := regexp.MustCompile(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$`)
-	if !rePattern.MatchString(plainPassword) {
+	var hasLower, hasUpper, hasDigit, hasSpecial bool
+	for _, character := range plainPassword {
+		switch {
+		case character >= 'a' && character <= 'z':
+			hasLower = true
+		case character >= 'A' && character <= 'Z':
+			hasUpper = true
+		case character >= '0' && character <= '9':
+			hasDigit = true
+		case character == '@' || character == '$' || character == '!' || character == '%' || character == '*' || character == '?' || character == '&':
+			hasSpecial = true
+		default:
+			return errors.New("password contains unsupported characters")
+		}
+	}
+	if !hasLower || !hasUpper || !hasDigit || !hasSpecial {
 		return errors.New("password must contain at least one uppercase letter, one lowercase letter, one number, and one special character")
 	}
 

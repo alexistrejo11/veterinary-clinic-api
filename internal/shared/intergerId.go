@@ -30,7 +30,7 @@ func NewBaseID(value uint) IntegerID {
 }
 
 func (id BaseID) Value() uint {
-	return id.Value()
+	return id.value
 }
 
 func (id BaseID) Equals(number uint) bool {

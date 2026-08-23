@@ -36,7 +36,7 @@ func NewUserHandler(
 
 // GetUserByID godoc
 // @Summary      Get user by ID
-// @Description  Returns a single user by ID. Requires admin or manager role.
+// @Description  Returns a single user by ID. Requires admin role.
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -114,7 +114,7 @@ func (ctrl *UserHandler) GetUserByPhone(ctx *gin.Context) {
 
 // SearchUsers godoc
 // @Summary      Search users
-// @Description  Paginated search and filter of users. Requires admin or manager role.
+// @Description  Paginated search and filter of users. Requires admin role.
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -154,7 +154,7 @@ func (ctrl *UserHandler) SearchUsers(ctx *gin.Context) {
 
 // CreateUser godoc
 // @Summary      Create user
-// @Description  Creates a new user. Requires admin or manager role.
+// @Description  Creates a new user. Requires admin role.
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -189,7 +189,7 @@ func (ctrl *UserHandler) CreateUser(c *gin.Context) {
 
 // UpdateUserStatus godoc
 // @Summary      Update user status
-// @Description  Updates the status of a user (e.g. activate/deactivate). Requires admin or manager role.
+// @Description  Updates the status of a user (e.g. activate/deactivate). Requires admin role.
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -236,7 +236,7 @@ func (ctrl *UserHandler) UpdateUserStatus(c *gin.Context) {
 
 // DeleteUser godoc
 // @Summary      Delete user
-// @Description  Soft-deletes a user by ID. Requires admin or manager role.
+// @Description  Soft-deletes a user by ID. Requires admin role.
 // @Tags         users
 // @Accept       json
 // @Produce      json
@@ -271,7 +271,7 @@ func (ctrl *UserHandler) DeleteUser(c *gin.Context) {
 
 // RestoreUser godoc
 // @Summary      Restore user
-// @Description  Restores a soft-deleted user. Requires admin or manager role.
+// @Description  Restores a soft-deleted user. Requires admin role.
 // @Tags         users
 // @Accept       json
 // @Produce      json

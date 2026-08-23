@@ -106,7 +106,7 @@ func (h *NotificationHandler) GetMyNotificationByID(c *gin.Context) {
 
 // GetNotificationsByType godoc
 // @Summary      Get notifications by type (staff)
-// @Description  Returns paginated notifications filtered by type. Requires employee, manager, or admin role.
+// @Description  Returns paginated notifications filtered by type. Requires veterinarian, receptionist, or admin role.
 // @Tags         notifications
 // @Accept       json
 // @Produce      json
@@ -147,7 +147,7 @@ func (h *NotificationHandler) GetNotificationsByType(c *gin.Context) {
 
 // GetNotificationsByChannel godoc
 // @Summary      Get notifications by channel (staff)
-// @Description  Returns paginated notifications filtered by delivery channel (email, sms). Requires employee, manager, or admin role.
+// @Description  Returns paginated notifications filtered by delivery channel (email, sms). Requires veterinarian, receptionist, or admin role.
 // @Tags         notifications
 // @Accept       json
 // @Produce      json
@@ -188,7 +188,7 @@ func (h *NotificationHandler) GetNotificationsByChannel(c *gin.Context) {
 
 // GetNotificationByID godoc
 // @Summary      Get notification by ID (staff)
-// @Description  Returns a single notification by ID. Requires employee, manager, or admin role.
+// @Description  Returns a single notification by ID. Requires veterinarian, receptionist, or admin role.
 // @Tags         notifications
 // @Accept       json
 // @Produce      json
@@ -216,7 +216,7 @@ func (h *NotificationHandler) GetNotificationByID(c *gin.Context) {
 
 // GetNotificationSummary godoc
 // @Summary      Get notification summary (staff)
-// @Description  Returns a summary of sent notifications, optionally filtered by sender. Requires employee, manager, or admin role.
+// @Description  Returns a summary of sent notifications, optionally filtered by sender. Requires veterinarian, receptionist, or admin role.
 // @Tags         notifications
 // @Accept       json
 // @Produce      json
@@ -247,7 +247,7 @@ func (h *NotificationHandler) GetNotificationSummary(c *gin.Context) {
 
 // SendNotification godoc
 // @Summary      Send notification (staff)
-// @Description  Manually sends a notification through the given channel (email, sms). Requires employee, manager, or admin role.
+// @Description  Manually sends a notification through the given channel (email, sms). Requires veterinarian, receptionist, or admin role.
 // @Tags         notifications
 // @Accept       json
 // @Produce      json
@@ -264,6 +264,11 @@ func (h *NotificationHandler) SendNotification(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
+		senderID, err := UserIDFromContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		notif.SenderID = senderID.String()
 		err = h.service.Send(ctx.Request.Context(), notif)
 		if err != nil {
 			return nil, err

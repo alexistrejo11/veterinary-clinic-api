@@ -31,11 +31,6 @@ func (m *PaymentMapper) RequestToCreateCommand(r dtos.PaymentCreateRequest) (pay
 		description = r.Description
 	}
 
-	var transactionID string
-	if r.TransactionID != nil {
-		transactionID = *r.TransactionID
-	}
-
 	var invoiceID string
 	if r.InvoiceID != nil {
 		invoiceID = *r.InvoiceID
@@ -51,9 +46,9 @@ func (m *PaymentMapper) RequestToCreateCommand(r dtos.PaymentCreateRequest) (pay
 	cmd := payments.CreatePaymentCommand{
 		Amount:        money.Amount().Float64(),
 		Currency:      money.Currency(),
-		Status:        payments.PaymentStatusPending,
+		Status:        payments.PaymentStatusAuthorized,
 		Method:        method,
-		TransactionID: transactionID,
+		Reference:     r.Reference,
 		Description:   "",
 		CustomerID:    customerID,
 		AppointmentID: apptID,
@@ -62,6 +57,9 @@ func (m *PaymentMapper) RequestToCreateCommand(r dtos.PaymentCreateRequest) (pay
 
 	if description != nil {
 		cmd.Description = *description
+	}
+	if r.Reason != nil {
+		cmd.Reason = *r.Reason
 	}
 	if r.DueDate != nil {
 		cmd.DueDate = *r.DueDate
@@ -75,15 +73,15 @@ func (m *PaymentMapper) RequestToUpdateCommand(id uint, r dtos.PaymentUpdateRequ
 	paymentID := payments.NewPaymentID(id)
 
 	cmd := payments.UpdatePaymentCommand{
-		ID:            paymentID,
-		Amount:        current.Amount.Amount().Float64(),
-		Currency:      current.Amount.Currency(),
-		Status:        current.Status,
-		Method:        current.Method,
-		TransactionID: "",
-		Description:   "",
-		DueDate:       time.Time{},
-		CustomerID:    current.PaidFromCustomer,
+		ID:          paymentID,
+		Amount:      current.Amount.Amount().Float64(),
+		Currency:    current.Amount.Currency(),
+		Status:      current.Status,
+		Method:      current.Method,
+		Reference:   current.Reference,
+		Description: "",
+		DueDate:     time.Time{},
+		CustomerID:  current.PaidFromCustomer,
 		AppointmentID: func() appointments.AppointmentID {
 			if current.AppointmentID != nil {
 				return *current.AppointmentID
@@ -128,7 +126,7 @@ func (m *PaymentMapper) RequestToUpdateCommand(id uint, r dtos.PaymentUpdateRequ
 func (m *PaymentMapper) RequestToSpecification(r dtos.PaymentSearchRequest) (payments.PaymentSpecification, error) {
 	spec := payments.PaymentSpecification{
 		OverdueOnly: r.OverdueOnly,
-		Pagination:  r.PaginationRequest.ToPagination(),
+		Pagination:  r.PaginationRequest.WithDefaults().ToPagination(),
 	}
 
 	if r.CustomerID != nil {
@@ -186,7 +184,9 @@ func (m *PaymentMapper) ToPaymentResponse(p payments.Payment) dtos.PaymentRespon
 		Method:        p.Method.String(),
 		MethodDisplay: p.Method.DisplayName(),
 
-		TransactionID: p.TransactionID,
+		Reference:     p.Reference,
+		ReceiptNumber: p.ReceiptNumber,
+		Reason:        p.Reason,
 		Description:   p.Description,
 		DueDate:       p.DueDate,
 		PaidAt:        p.PaidAt,

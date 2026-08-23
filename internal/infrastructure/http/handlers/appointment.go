@@ -16,7 +16,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// AppointmentHandler handles appointment HTTP with customer-, employee-, and manager-scoped endpoints.
+// AppointmentHandler handles appointment HTTP with customer-, veterinarian-, and receptionist-scoped endpoints.
 type AppointmentHandler struct {
 	commandService     appointments.CommandService
 	queryService       appointments.QueryService
@@ -154,8 +154,9 @@ func (h *AppointmentHandler) updateAppointmentInternal(
 	ctx *gin.Context,
 	req dtos.AppointmentUpdateGeneralInfoRequest,
 	apptID uint,
+	optEmployeeID *uint,
 ) (any, error) {
-	cmd, err := h.mapper.RequestToUpdateCommand(req, apptID)
+	cmd, err := h.mapper.RequestToUpdateCommand(req, apptID, optEmployeeID)
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +180,9 @@ func (h *AppointmentHandler) rescheduleInternal(
 	ctx *gin.Context,
 	req dtos.RescheduleAppointmentRequest,
 	apptID uint,
+	optEmployeeID *uint,
 ) (any, error) {
-	command := h.mapper.RequestToRescheduleCommand(req, apptID)
+	command := h.mapper.RequestToRescheduleCommand(req, apptID, optEmployeeID)
 	err := h.commandService.RescheduleAppointment(ctx.Request.Context(), command)
 	if err != nil {
 		return nil, err
@@ -206,8 +208,8 @@ func (h *AppointmentHandler) completeInternal(ctx *gin.Context, apptID uint, opt
 	return nil, nil
 }
 
-func (h *AppointmentHandler) cancelInternal(ctx *gin.Context, apptID uint, optEmployeeID *uint, reason string) (any, error) {
-	command := h.mapper.ToCancelCommand(apptID, optEmployeeID, reason)
+func (h *AppointmentHandler) cancelInternal(ctx *gin.Context, apptID uint, optEmployeeID, optCustomerID *uint, reason string) (any, error) {
+	command := h.mapper.ToCancelCommand(apptID, optEmployeeID, optCustomerID, reason)
 	err := h.commandService.CancelAppointment(ctx.Request.Context(), command)
 	if err != nil {
 		return nil, err
@@ -327,13 +329,42 @@ func (h *AppointmentHandler) RequestAppointment(c *gin.Context) {
 	})(c)
 }
 
+// CancelMyAppointment godoc
+// @Summary Cancel my appointment (customer)
+// @Description Cancels a cancellable appointment belonging to the authenticated customer. Requires customer role.
+// @Tags appointments
+// @Security BearerAuth
+// @Param id path int true "Appointment ID"
+// @Param reason query string false "Cancellation reason"
+// @Success 200 {object} http.APIResponse "Appointment cancelled"
+// @Failure 400 {object} http.APIResponse "Invalid ID or appointment cannot be cancelled"
+// @Failure 401 {object} http.APIResponse "Unauthorized"
+// @Failure 404 {object} http.APIResponse "Appointment not found"
+// @Router /me/appointments/{id}/cancel [post]
+func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
+	logic := func(ctx *gin.Context) (any, error) {
+		customerID, err := h.getMyCustomerID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		apptID, err := parseAppointmentIDFromParam(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return h.cancelInternal(ctx, apptID.Value(), nil, &customerID, ctx.Query("reason"))
+	}
+	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment cancelled successfully")
+	})(c)
+}
+
 // ------------------------------------------------------------
 // Employee handlers (only their assigned appointments)
 // ------------------------------------------------------------
 
 // GetMyAppointmentAsEmployee godoc
-// @Summary      Get my assigned appointment by ID (employee)
-// @Description  Returns a single appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Summary      Get my assigned appointment by ID (veterinarian)
+// @Description  Returns a single appointment assigned to the authenticated veterinarian. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -361,8 +392,8 @@ func (h *AppointmentHandler) GetMyAppointmentAsEmployee(c *gin.Context) {
 }
 
 // GetMyAppointmentsAsEmployee godoc
-// @Summary      Get my assigned appointments (employee)
-// @Description  Returns paginated appointments assigned to the authenticated employee. Requires employee or manager role.
+// @Summary      Get my assigned appointments (veterinarian)
+// @Description  Returns paginated appointments assigned to the authenticated veterinarian. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -393,33 +424,9 @@ func (h *AppointmentHandler) GetMyAppointmentsAsEmployee(c *gin.Context) {
 	})(c)
 }
 
-// CreateAppointmentAsEmployee godoc
-// @Summary      Create appointment (employee)
-// @Description  Creates an appointment assigned to the authenticated employee. Requires employee or manager role.
-// @Tags         appointments
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        body   body      dtos.AppointmentCreateRequest  true  "Appointment data"
-// @Success      201    {object}  http.APIResponse  "Appointment created (data contains new appointment ID)"
-// @Failure      400    {object}  http.APIResponse  "Validation error"
-// @Failure      401    {object}  http.APIResponse  "Unauthorized"
-// @Failure      500    {object}  http.APIResponse  "Internal server error"
-// @Router       /employees/appointments [post]
-func (h *AppointmentHandler) CreateAppointmentAsEmployee(c *gin.Context) {
-	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
-		employeeID, err := h.getMyEmployeeID(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return h.createAppointmentInternal(ctx, req, &employeeID)
-	}
-	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
-}
-
 // UpdateMyAppointment godoc
-// @Summary      Update my appointment (employee)
-// @Description  Updates general info (reason, notes, service) of an appointment assigned to the authenticated employee. Requires employee or manager role.
+// @Summary      Update my appointment (veterinarian)
+// @Description  Updates general info (reason, notes, service) of an appointment assigned to the authenticated veterinarian. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -434,18 +441,22 @@ func (h *AppointmentHandler) CreateAppointmentAsEmployee(c *gin.Context) {
 // @Router       /employees/appointments/{id} [put]
 func (h *AppointmentHandler) UpdateMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentUpdateGeneralInfoRequest) (any, error) {
+		employeeID, err := h.getMyEmployeeID(ctx)
+		if err != nil {
+			return nil, err
+		}
 		apptID, err := parseAppointmentIDFromParam(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return h.updateAppointmentInternal(ctx, req, apptID.Value())
+		return h.updateAppointmentInternal(ctx, req, apptID.Value(), &employeeID)
 	}
 	http.HandleUpdateRequest(h.validator, "Appointment", logic)(c)
 }
 
 // RescheduleMyAppointment godoc
-// @Summary      Reschedule my appointment (employee)
-// @Description  Reschedules an appointment assigned to the authenticated employee to a new date/time. Requires employee or manager role.
+// @Summary      Reschedule my appointment (veterinarian)
+// @Description  Reschedules an appointment assigned to the authenticated veterinarian to a new date/time. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -460,33 +471,6 @@ func (h *AppointmentHandler) UpdateMyAppointment(c *gin.Context) {
 // @Router       /employees/appointments/{id}/reschedule [post]
 func (h *AppointmentHandler) RescheduleMyAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.RescheduleAppointmentRequest) (any, error) {
-		apptID, err := parseAppointmentIDFromParam(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return h.rescheduleInternal(ctx, req, apptID.Value())
-	}
-	http.HandleRequestWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
-		http.Success(c, nil, "Appointment rescheduled successfully")
-	})(c)
-}
-
-// ConfirmMyAppointment godoc
-// @Summary      Confirm my appointment (employee)
-// @Description  Confirms an appointment assigned to the authenticated employee. Requires employee or manager role.
-// @Tags         appointments
-// @Accept       json
-// @Produce      json
-// @Security     BearerAuth
-// @Param        id   path      int  true  "Appointment ID"
-// @Success      200  {object}  http.APIResponse  "Appointment confirmed"
-// @Failure      400  {object}  http.APIResponse  "Invalid ID"
-// @Failure      401  {object}  http.APIResponse  "Unauthorized"
-// @Failure      404  {object}  http.APIResponse  "Appointment not found"
-// @Failure      500  {object}  http.APIResponse  "Internal server error"
-// @Router       /employees/appointments/{id}/confirm [post]
-func (h *AppointmentHandler) ConfirmMyAppointment(c *gin.Context) {
-	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
 		if err != nil {
 			return nil, err
@@ -495,16 +479,16 @@ func (h *AppointmentHandler) ConfirmMyAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		return h.confirmInternal(ctx, apptID.Value(), employeeID)
+		return h.rescheduleInternal(ctx, req, apptID.Value(), &employeeID)
 	}
-	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
-		http.Success(c, nil, "Appointment confirmed successfully")
+	http.HandleRequestWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
+		http.Success(c, nil, "Appointment rescheduled successfully")
 	})(c)
 }
 
 // CompleteMyAppointment godoc
-// @Summary      Complete my appointment (employee)
-// @Description  Marks an appointment assigned to the authenticated employee as completed. Requires employee or manager role.
+// @Summary      Complete my appointment (veterinarian)
+// @Description  Marks an appointment assigned to the authenticated veterinarian as completed. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -535,9 +519,9 @@ func (h *AppointmentHandler) CompleteMyAppointment(c *gin.Context) {
 	})(c)
 }
 
-// CancelMyAppointment godoc
-// @Summary      Cancel my appointment (employee)
-// @Description  Cancels an appointment assigned to the authenticated employee. Requires employee or manager role.
+// CancelAssignedAppointment godoc
+// @Summary      Cancel my appointment (veterinarian)
+// @Description  Cancels an appointment assigned to the authenticated veterinarian. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -550,7 +534,7 @@ func (h *AppointmentHandler) CompleteMyAppointment(c *gin.Context) {
 // @Failure      404     {object}  http.APIResponse  "Appointment not found"
 // @Failure      500     {object}  http.APIResponse  "Internal server error"
 // @Router       /employees/appointments/{id}/cancel [post]
-func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
+func (h *AppointmentHandler) CancelAssignedAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context) (any, error) {
 		employeeID, err := h.getMyEmployeeID(ctx)
 		if err != nil {
@@ -561,7 +545,7 @@ func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
 			return nil, err
 		}
 		reason := ctx.Query("reason")
-		return h.cancelInternal(ctx, apptID.Value(), &employeeID, reason)
+		return h.cancelInternal(ctx, apptID.Value(), &employeeID, nil, reason)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment cancelled successfully")
@@ -569,8 +553,8 @@ func (h *AppointmentHandler) CancelMyAppointment(c *gin.Context) {
 }
 
 // NotAttendMyAppointment godoc
-// @Summary      Mark my appointment as not attended (employee)
-// @Description  Marks an appointment assigned to the authenticated employee as not attended. Requires employee or manager role.
+// @Summary      Mark my appointment as not attended (veterinarian)
+// @Description  Marks an appointment assigned to the authenticated veterinarian as not attended. Requires veterinarian role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -604,8 +588,8 @@ func (h *AppointmentHandler) NotAttendMyAppointment(c *gin.Context) {
 // ------------------------------------------------------------
 
 // GetAppointmentByID godoc
-// @Summary      Get appointment by ID (manager/admin)
-// @Description  Returns a single appointment by ID. Requires admin or manager role.
+// @Summary      Get appointment by ID (receptionist/admin)
+// @Description  Returns a single appointment by ID. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -629,8 +613,8 @@ func (h *AppointmentHandler) GetAppointmentByID(c *gin.Context) {
 }
 
 // SearchAppointments godoc
-// @Summary      Search appointments (manager/admin)
-// @Description  Paginated search of all appointments with filters. Requires admin or manager role.
+// @Summary      Search appointments (receptionist/admin)
+// @Description  Paginated search of all appointments with filters. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -666,8 +650,8 @@ func (h *AppointmentHandler) SearchAppointments(c *gin.Context) {
 }
 
 // GetAppointmentsByCustomerID godoc
-// @Summary      Get appointments by customer (manager/admin)
-// @Description  Returns paginated appointments for a given customer. Requires admin or manager role.
+// @Summary      Get appointments by customer (receptionist/admin)
+// @Description  Returns paginated appointments for a given customer. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -700,8 +684,8 @@ func (h *AppointmentHandler) GetAppointmentsByCustomerID(c *gin.Context) {
 }
 
 // GetAppointmentsByEmployeeID godoc
-// @Summary      Get appointments by employee (manager/admin)
-// @Description  Returns paginated appointments for a given employee. Requires admin or manager role.
+// @Summary      Get appointments by employee (receptionist/admin)
+// @Description  Returns paginated appointments for a given employee. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -734,8 +718,8 @@ func (h *AppointmentHandler) GetAppointmentsByEmployeeID(c *gin.Context) {
 }
 
 // GetAppointmentsByPetID godoc
-// @Summary      Get appointments by pet (manager/admin)
-// @Description  Returns paginated appointments for a given pet. Requires admin or manager role.
+// @Summary      Get appointments by pet (receptionist/admin)
+// @Description  Returns paginated appointments for a given pet. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -777,8 +761,8 @@ func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
 }
 
 // CreateAppointment godoc
-// @Summary      Create appointment (manager/admin)
-// @Description  Creates a new appointment, optionally assigned to an employee via query param. Requires admin or manager role.
+// @Summary      Create appointment (receptionist/admin)
+// @Description  Creates a new appointment, optionally assigned to a veterinarian via query param. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -799,8 +783,8 @@ func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
 }
 
 // UpdateAppointment godoc
-// @Summary      Update appointment (manager/admin)
-// @Description  Updates general info (reason, notes, service) of an appointment. Requires admin or manager role.
+// @Summary      Update appointment (receptionist/admin)
+// @Description  Updates general info (reason, notes, service) of an appointment. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -819,14 +803,14 @@ func (h *AppointmentHandler) UpdateAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		return h.updateAppointmentInternal(ctx, req, apptID.Value())
+		return h.updateAppointmentInternal(ctx, req, apptID.Value(), nil)
 	}
 	http.HandleUpdateRequest(h.validator, "Appointment", logic)(c)
 }
 
 // DeleteAppointment godoc
-// @Summary      Delete appointment (manager/admin)
-// @Description  Deletes an appointment. Soft-delete by default; pass hard=true for permanent deletion. Requires admin or manager role.
+// @Summary      Delete appointment (receptionist/admin)
+// @Description  Deletes an appointment. Soft-delete by default; pass hard=true for permanent deletion. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -852,8 +836,8 @@ func (h *AppointmentHandler) DeleteAppointment(c *gin.Context) {
 }
 
 // RescheduleAppointment godoc
-// @Summary      Reschedule appointment (manager/admin)
-// @Description  Reschedules an appointment to a new date/time. Requires admin or manager role.
+// @Summary      Reschedule appointment (receptionist/admin)
+// @Description  Reschedules an appointment to a new date/time. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -872,7 +856,7 @@ func (h *AppointmentHandler) RescheduleAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		return h.rescheduleInternal(ctx, req, apptID.Value())
+		return h.rescheduleInternal(ctx, req, apptID.Value(), nil)
 	}
 	http.HandleRequestWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment rescheduled successfully")
@@ -880,8 +864,8 @@ func (h *AppointmentHandler) RescheduleAppointment(c *gin.Context) {
 }
 
 // ConfirmAppointment godoc
-// @Summary      Confirm appointment (manager/admin)
-// @Description  Confirms an appointment and assigns the employee given in the query param. Requires admin or manager role.
+// @Summary      Confirm appointment (receptionist/admin)
+// @Description  Confirms an appointment and assigns the veterinarian given in the query param. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -913,8 +897,8 @@ func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 }
 
 // CompleteAppointment godoc
-// @Summary      Complete appointment (manager/admin)
-// @Description  Marks an appointment as completed, with optional employee and notes. Requires admin or manager role.
+// @Summary      Complete appointment (receptionist/admin)
+// @Description  Marks an appointment as completed, with optional veterinarian and notes. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -934,9 +918,8 @@ func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
 		notes := ctx.Query("notes")
-		return h.completeInternal(ctx, apptID.Value(), optEmployeeID, notes)
+		return h.completeInternal(ctx, apptID.Value(), nil, notes)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment completed successfully")
@@ -944,8 +927,8 @@ func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
 }
 
 // CancelAppointment godoc
-// @Summary      Cancel appointment (manager/admin)
-// @Description  Cancels an appointment, with optional employee and reason. Requires admin or manager role.
+// @Summary      Cancel appointment (receptionist/admin)
+// @Description  Cancels an appointment, with optional veterinarian and reason. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -965,9 +948,8 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
 		reason := ctx.Query("reason")
-		return h.cancelInternal(ctx, apptID.Value(), optEmployeeID, reason)
+		return h.cancelInternal(ctx, apptID.Value(), nil, nil, reason)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment cancelled successfully")
@@ -975,8 +957,8 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 }
 
 // NotAttendAppointment godoc
-// @Summary      Mark appointment as not attended (manager/admin)
-// @Description  Marks an appointment as not attended, with optional employee. Requires admin or manager role.
+// @Summary      Mark appointment as not attended (receptionist/admin)
+// @Description  Marks an appointment as not attended, with optional veterinarian. Requires admin or receptionist role.
 // @Tags         appointments
 // @Accept       json
 // @Produce      json
@@ -995,8 +977,7 @@ func (h *AppointmentHandler) NotAttendAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
-		return h.notAttendInternal(ctx, apptID.Value(), optEmployeeID)
+		return h.notAttendInternal(ctx, apptID.Value(), nil)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment marked as not attended successfully")

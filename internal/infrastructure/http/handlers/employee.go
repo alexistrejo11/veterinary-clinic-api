@@ -6,6 +6,7 @@ import (
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
 	"clinic-vet-api/internal/shared/http"
 	"clinic-vet-api/internal/shared/page"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -27,7 +28,7 @@ func NewEmployeeHandler(service employees.EmployeeService, validator *validator.
 
 // GetEmployeeByID godoc
 // @Summary      Get employee by ID
-// @Description  Returns a single employee by ID. Requires admin or manager role.
+// @Description  Returns a single employee by ID. Requires admin role.
 // @Tags         employees
 // @Accept       json
 // @Produce      json
@@ -114,7 +115,7 @@ func (s *EmployeeHandler) GetEmployeeStats(c *gin.Context) {
 
 // SearchEmployees godoc
 // @Summary      Search employees
-// @Description  Paginated search/filter of employees. Requires admin or manager role.
+// @Description  Paginated search/filter of employees. Requires admin role.
 // @Tags         employees
 // @Accept       json
 // @Produce      json
@@ -127,15 +128,31 @@ func (s *EmployeeHandler) GetEmployeeStats(c *gin.Context) {
 // @Router       /employees [get]
 func (s *EmployeeHandler) SearchEmployees(c *gin.Context) {
 	var requestBodyData dtos.EmployeeSearchRequest
-	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
+	if err := http.ShouldBindAndValidateQuery(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
 		return
 	}
+	spec := employees.EmployeeSpecification{Pagination: requestBodyData.PaginationRequest.WithDefaults().ToPagination(), IsActive: requestBodyData.IsActive}
+	if requestBodyData.Specialty != "" {
+		specialty, err := employees.ParseVetSpecialty(requestBodyData.Specialty)
+		if err != nil {
+			http.BadRequest(c, err)
+			return
+		}
+		spec.Specialty = &specialty
+	}
+	employeePage, err := s.service.GetEmployeesBySpecification(c.Request.Context(), spec)
+	if err != nil {
+		http.ApplicationError(c, err)
+		return
+	}
+	responsePage := s.mapper.ToEmployeeResponses(employeePage)
+	http.Paginated(c, &responsePage, "Employees")
 }
 
 // CreateEmployee godoc
 // @Summary      Create employee
-// @Description  Creates a new employee. Requires admin or manager role.
+// @Description  Creates a new employee. Requires admin role.
 // @Tags         employees
 // @Accept       json
 // @Produce      json
@@ -170,7 +187,7 @@ func (s *EmployeeHandler) CreateEmployee(c *gin.Context) {
 
 // UpdateEmployee godoc
 // @Summary      Update employee
-// @Description  Updates an existing employee by ID. Requires admin or manager role.
+// @Description  Updates an existing employee by ID. Requires admin role.
 // @Tags         employees
 // @Accept       json
 // @Produce      json
@@ -182,9 +199,18 @@ func (s *EmployeeHandler) CreateEmployee(c *gin.Context) {
 // @Failure      500     {object}  http.APIResponse            "Internal server error"
 // @Router       /employees/{id} [put]
 func (s *EmployeeHandler) UpdateEmployee(c *gin.Context) {
+	pathID, err := http.ParseParamToUInt(c, "id")
+	if err != nil {
+		http.BadRequest(c, err)
+		return
+	}
 	var requestBodyData dtos.EmployeeUpdateRequest
 	if err := http.ShouldBindAndValidateBody(c, &requestBodyData, s.validator); err != nil {
 		http.BadRequest(c, err)
+		return
+	}
+	if requestBodyData.ID != pathID {
+		http.BadRequest(c, fmt.Errorf("body id must match path id"))
 		return
 	}
 
@@ -204,7 +230,7 @@ func (s *EmployeeHandler) UpdateEmployee(c *gin.Context) {
 
 // RestoreEmployee godoc
 // @Summary      Restore employee
-// @Description  Restores a soft-deleted employee. Requires admin or manager role.
+// @Description  Restores a soft-deleted employee. Requires admin role.
 // @Tags         employees
 // @Accept       json
 // @Produce      json
@@ -228,11 +254,12 @@ func (s *EmployeeHandler) RestoreEmployee(c *gin.Context) {
 		http.ApplicationError(c, err)
 		return
 	}
+	http.Success(c, nil, "Employee restored")
 }
 
 // DeleteEmployee godoc
 // @Summary      Delete employee
-// @Description  Soft-deletes an employee by ID. Requires admin or manager role.
+// @Description  Soft-deletes an employee by ID. Requires admin role.
 // @Tags         employees
 // @Accept       json
 // @Produce      json
@@ -256,4 +283,5 @@ func (s *EmployeeHandler) DeleteEmployee(c *gin.Context) {
 		http.ApplicationError(c, err)
 		return
 	}
+	http.Success(c, nil, "Employee deleted")
 }

@@ -5,6 +5,7 @@ import (
 	"clinic-vet-api/internal/shared/page"
 	"context"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -106,11 +107,15 @@ func (s *employeeService) CreateEmployee(ctx context.Context, cmd CreateEmployee
 		IsActive:        cmd.IsActive,
 	}
 
-	// Build schedule from command
+	day, err := parseWeekday(cmd.Schedule.Day)
+	if err != nil {
+		return Employee{}, err
+	}
+	// Build schedule from command.
 	schedule := &EmployeeSchedule{
 		WorkDays: []WorkDaySchedule{
 			{
-				Day:       time.Monday, // TODO: map cmd.Schedule.Day string to weekday if needed
+				Day:       day,
 				StartHour: cmd.Schedule.EntryTime,
 				EndHour:   cmd.Schedule.DepartureTime,
 				Breaks: Break{
@@ -175,10 +180,14 @@ func (s *employeeService) UpdateEmployee(ctx context.Context, cmd UpdateEmployee
 
 	// Update schedule if provided
 	if cmd.Schedule != nil {
+		day, err := parseWeekday(cmd.Schedule.Day)
+		if err != nil {
+			return err
+		}
 		schedule := &EmployeeSchedule{
 			WorkDays: []WorkDaySchedule{
 				{
-					Day:       time.Monday, // TODO: map cmd.Schedule.Day string to weekday if needed
+					Day:       day,
 					StartHour: cmd.Schedule.EntryTime,
 					EndHour:   cmd.Schedule.DepartureTime,
 					Breaks: Break{
@@ -199,9 +208,7 @@ func (s *employeeService) UpdateEmployee(ctx context.Context, cmd UpdateEmployee
 }
 
 func (s *employeeService) RestoreEmployee(ctx context.Context, id EmployeeID) error {
-	// No restore operation defined at repository level yet.
-	// For now, signal that restore is not supported.
-	return fmt.Errorf("restore employee is not supported")
+	return s.repository.RestoreByID(ctx, id)
 }
 
 func (s *employeeService) DeleteEmployee(ctx context.Context, id EmployeeID) error {
@@ -214,6 +221,27 @@ func (s *employeeService) GetEmployeeByID(ctx context.Context, id EmployeeID) (E
 
 func (s *employeeService) GetEmployeesBySpecification(ctx context.Context, spec EmployeeSpecification) (page.Page[Employee], error) {
 	return s.repository.GetBySpecification(ctx, spec)
+}
+
+func parseWeekday(value string) (time.Weekday, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "sunday":
+		return time.Sunday, nil
+	case "monday":
+		return time.Monday, nil
+	case "tuesday":
+		return time.Tuesday, nil
+	case "wednesday":
+		return time.Wednesday, nil
+	case "thursday":
+		return time.Thursday, nil
+	case "friday":
+		return time.Friday, nil
+	case "saturday":
+		return time.Saturday, nil
+	default:
+		return 0, fmt.Errorf("invalid schedule day %q", value)
+	}
 }
 
 func (s *employeeService) GetActiveEmployees(ctx context.Context, pagination page.Pagination) (page.Page[Employee], error) {

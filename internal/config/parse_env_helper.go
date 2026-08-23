@@ -35,14 +35,3 @@ func parseDuration(key, defaultValue string) (time.Duration, error) {
 	value := getEnvWithDefault(key, defaultValue)
 	return time.ParseDuration(value)
 }
-
-func getEnvAsBool(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		parsed, err := strconv.ParseBool(value)
-		if err != nil {
-			return defaultValue
-		}
-		return parsed
-	}
-	return defaultValue
-}

@@ -3,7 +3,6 @@ package auth
 import (
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/shared"
-	"context"
 )
 
 type LoginCommand struct {
@@ -22,11 +21,12 @@ type RefreshTokenCommand struct {
 
 type LogoutCommand struct {
 	RefreshToken string
+	UserID       shared.UserID
 }
 
 type VerifyTwoFactorCommand struct {
-	UserID        shared.UserID
-	TwoFactorCode string
+	ChallengeToken string
+	TwoFactorCode  string
 }
 
 type VerifyEmailCommand struct {
@@ -52,12 +52,12 @@ type RegisterCommand struct {
 	Password string
 
 	// Personal information
-	Name        string
+	FirstName   string
+	LastName    string
 	PhoneNumber string
 	DateOfBirth string
 	Gender      string
 	PhotoURL    string
-	Bio         string
 
 	// Employee credentials
 	EmployeeID    *uint
@@ -67,10 +67,6 @@ type RegisterCommand struct {
 func (c *RegisterCommand) HasEmployeeData() bool {
 	return c.EmployeeID != nil && c.LicenseNumber != nil
 
-}
-
-func (c *RegisterCommand) HasCustomerData(ctx context.Context) bool {
-	return c.Name != "" && c.PhoneNumber != "" && c.DateOfBirth != "" && c.Gender != "" && c.PhotoURL != "" && c.Bio != ""
 }
 
 type RequestResetPasswordCommand struct {

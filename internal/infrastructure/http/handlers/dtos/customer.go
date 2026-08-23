@@ -27,10 +27,10 @@ type CustomerSearchRequest struct {
 	page.PaginationRequest
 
 	// Optional text search over first and last name.
-	Search string `json:"search,omitempty"`
+	Search string `json:"search,omitempty" form:"search"`
 
 	// Optional active filter.
-	IsActive *bool `json:"is_active,omitempty"`
+	IsActive *bool `json:"is_active,omitempty" form:"is_active"`
 }
 
 // CustomerCreateRequest represents the body for creating a new customer

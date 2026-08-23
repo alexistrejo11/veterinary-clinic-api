@@ -2,11 +2,11 @@ package repository
 
 import (
 	"clinic-vet-api/database/models"
+	"clinic-vet-api/database/sqlc"
 	"clinic-vet-api/internal/core/customers"
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/mapper"
 	"clinic-vet-api/internal/shared/page"
-	"clinic-vet-api/database/sqlc"
 	"context"
 	"database/sql"
 	"errors"
@@ -43,9 +43,14 @@ func (r *CustomersSqlcRepository) FindBySpecification(ctx context.Context, spec 
 			isActiveFilter = 0
 		}
 	}
+	searchTerm := ""
+	if spec.SearchTerm != nil {
+		searchTerm = *spec.SearchTerm
+	}
 	params := sqlc.FindCustomersBySpecParams{
 		Column1: userFilter,
 		Column2: isActiveFilter,
+		Column3: searchTerm,
 		Limit:   int32(spec.Pagination.Size),
 		Offset:  spec.Pagination.Offset(),
 	}
@@ -56,6 +61,7 @@ func (r *CustomersSqlcRepository) FindBySpecification(ctx context.Context, spec 
 	total, err := r.queries.CountCustomersBySpec(ctx, sqlc.CountCustomersBySpecParams{
 		Column1: userFilter,
 		Column2: isActiveFilter,
+		Column3: searchTerm,
 	})
 	if err != nil {
 		return page.Page[customers.Customer]{}, r.dbError(OpCount, ErrMsgFindCustomersBySpec, err)
@@ -170,7 +176,9 @@ func (r *CustomersSqlcRepository) FindByUserID(ctx context.Context, userID uint)
 }
 
 func (r *CustomersSqlcRepository) RestoreByID(ctx context.Context, id customers.CustomerID) error {
-	// TODO: Implement restore by ID
+	if err := r.queries.RestoreCustomer(ctx, id.Int32()); err != nil {
+		return r.dbError(OpUpdate, "failed to restore customer", err)
+	}
 	return nil
 }
 

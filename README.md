@@ -2,7 +2,7 @@
 
 REST API for veterinary clinic operations—customers, pets, appointments, clinical sessions, payments, and notifications.
 
-[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![Gin](https://img.shields.io/badge/Gin-1.10-00ADD8)](https://github.com/gin-gonic/gin)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-12+-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen)]()
@@ -72,20 +72,20 @@ Project documentation lives on the portfolio site: [veterinary-clinic-api](https
 | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) | Endpoints, auth, rate limits, examples |
 | [Code](https://alexis-trejo.com/projects/veterinary-clinic-api/code) | Curated code examples from the repo |
 
-Docker-specific setup: [docker/README.md](docker/README.md). Local OpenAPI: `docs/swagger.json` / Swagger UI when enabled.
+Local OpenAPI: `docs/swagger.json` / Swagger UI when enabled.
 
 ---
 
 ## Tech stack
 
-- **Go 1.24** — monolith binary (`clinic-vet-api`)
+- **Go 1.26.5** — monolith binary (`clinic-vet-api`)
 - **Gin** — HTTP router and middleware
 - **PostgreSQL** — pgx pool + **sqlc** generated queries
 - **Redis** — go-redis (JWT / sessions)
-- **golang-migrate** — `db/migrations/`
+- **golang-migrate** — `database/migrations/`
 - **Swagger (swaggo)** — handler annotations → `docs/docs.go`
 - **Twilio** & **SMTP** — notifications (configurable)
-- **Docker** — multi-stage Alpine image (`docker/Dockerfile`)
+- **Docker** — multi-stage Alpine image (`Dockerfile`)
 
 ---
 
@@ -108,9 +108,9 @@ Full diagram, layers, and decisions: [Architecture](https://alexis-trejo.com/pro
 
 ## Prerequisites
 
-- **Go 1.24+**
+- **Go 1.26.5+**
 - **Docker** & Docker Compose (recommended for local stack)
-- **PostgreSQL** and **Redis** (included via `./docker/up-local.sh`, or cloud URLs in `.env`)
+- **PostgreSQL** and **Redis** (included through the `full` Compose profile, or cloud URLs in `.env`)
 
 ---
 
@@ -121,7 +121,7 @@ Full diagram, layers, and decisions: [Architecture](https://alexis-trejo.com/pro
 ```bash
 git clone https://github.com/alexisTrejo11/veterinary-clinic-api.git
 cd veterinary-clinic-api
-cp .env.example .env
+cp .env-example .env
 # Edit DATABASE_URL, REDIS_URL, JWT_SECRET (32+ chars), etc.
 ```
 
@@ -130,8 +130,8 @@ cp .env.example .env
 From the repository root:
 
 ```bash
-./docker/up-local.sh --build        # foreground
-./docker/up-local.sh --build -d     # detached
+COMPOSE_PROFILES=full docker compose up --build
+COMPOSE_PROFILES=full docker compose up --build -d
 ```
 
 | Service | URL |
@@ -149,7 +149,7 @@ Migrations run on API startup unless `SKIP_MIGRATIONS=true`.
 # Start Postgres and Redis yourself, then:
 export $(grep -v '^#' .env | xargs)
 go run ./cmd/migrate    # optional: migrations only
-go run .
+go run ./cmd/api
 ```
 
 ### 4. Dev container (cloud RDS + Upstash)
@@ -157,16 +157,16 @@ go run .
 Point `.env` at your RDS and Upstash URLs, then:
 
 ```bash
-docker compose --env-file .env -f docker/compose.dev.yml up --build
+COMPOSE_PROFILES=standalone docker compose --env-file .env up --build
 ```
 
-See [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure) and [docker/README.md](docker/README.md).
+See [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure).
 
 ---
 
 ## Configuration
 
-Copy [.env.example](.env.example) to `.env`. Never commit `.env`.
+Copy [.env-example](.env-example) to `.env`. Never commit `.env`.
 
 | Variable | Description |
 |----------|-------------|
@@ -205,7 +205,9 @@ Authentication: `Authorization: Bearer <access_token>` on protected routes.
 | Appointments | `/api/v2/me/appointments/`, `/api/v2/appointments/`, … | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
 | Notifications | `/api/v2/me/notifications`, `/api/v2/notifications` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
 | Medical | `/api/v2/medical/`, `/api/v2/me/medical/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
-| Pets / payments / addresses | Planned (handlers exist) | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Pets | `/api/v2/pets/`, `/api/v2/me/pets/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Payments | `/api/v2/payments/`, `/api/v2/me/payments/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
+| Addresses | `/api/v2/addresses/`, `/api/v2/me/addresses/` | [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api) |
 
 Full endpoint list with request/response examples: [API](https://alexis-trejo.com/projects/veterinary-clinic-api/api).
 
@@ -215,7 +217,7 @@ Full endpoint list with request/response examples: [API](https://alexis-trejo.co
 
 ```
 veterinary-clinic-api/
-├── main.go                      # Entrypoint, middleware, health
+├── cmd/api/                     # API entrypoint
 ├── cmd/migrate/                 # Host-side migration runner
 ├── internal/
 │   ├── core/                    # Domain (auth, pets, appointments, …)
@@ -223,12 +225,13 @@ veterinary-clinic-api/
 │   ├── infrastructure/persitence/
 │   ├── config/                  # Settings, Redis, bootstrap
 │   └── middleware/              # Auth, CORS, audit, rate limit
-├── db/migrations/               # SQL migrations
-├── sqlc/                        # Generated query code
+├── database/migrations/         # SQL migrations
+├── database/sqlc/               # Generated query code
 ├── docs/                        # Swagger bundle (docs.go, swagger.*)
-├── docker/                      # Dockerfile, compose, up-local.sh
+├── Dockerfile                   # API image build
+├── docker-compose.yml           # Local Compose profiles
 ├── scripts/                     # entrypoint, URL parsers
-├── .env.example
+├── .env-example
 └── go.mod
 ```
 
@@ -238,13 +241,13 @@ veterinary-clinic-api/
 
 **Live today:** RDS PostgreSQL and Upstash Redis via `DATABASE_URL` and `REDIS_URL`.
 
-**Next step (documented, not automated in repo):** Build `docker/Dockerfile` → push to ECR → run on **ECS Fargate** behind an **ALB** with health check `GET /health`. Alternative: EC2 + `docker/compose.dev.yml`.
+**Next step (documented, not automated in repo):** Build `Dockerfile` → push to ECR → run on **ECS Fargate** behind an **ALB** with health check `GET /health`.
 
 Checklist and cost placeholders: [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure).
 
 ```bash
 # Example: API-only container against cloud DB/Redis
-docker compose --env-file .env -f docker/compose.dev.yml up --build -d
+COMPOSE_PROFILES=standalone docker compose --env-file .env up --build -d
 ```
 
 ---
@@ -300,5 +303,5 @@ No license file is included yet. Add a `LICENSE` file before distributing or pub
 # Run Migration manually
 
 ```bash
-migrate -path db/migrations -database "postgresql://user:password@localhost/vet_database?sslmode=disable" up
+migrate -path database/migrations -database "postgresql://user:password@localhost/vet_database?sslmode=disable" up
 ```

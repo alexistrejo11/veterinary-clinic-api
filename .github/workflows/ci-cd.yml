@@ -24,7 +24,7 @@ on:
 
 env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
-  GO_VERSION: "1.24.0"
+  GO_VERSION: "1.26.5"
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -32,6 +32,33 @@ jobs:
   # ---------------------------------------------------------------------------
   ci:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: vet_database
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vet_database"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vet_database?sslmode=disable
+      REDIS_URL: redis://localhost:6379/0
+      RUN_INTEGRATION_TESTS: "true"
     steps:
       - uses: actions/checkout@v4
 
@@ -47,11 +74,23 @@ jobs:
       - name: Build
         run: go build -o /dev/null ./cmd/api
 
+      - name: Apply migrations
+        run: go run ./cmd/migrate
+
       - name: Test
         run: go test ./...
 
+      - name: Race test
+        run: go test -race ./...
+
       - name: Vet
         run: go vet ./...
+
+      - name: Verify SQLC output
+        run: docker run --rm -v "$PWD:/src" -w /src sqlc/sqlc:1.31.1 generate -f database/sqlc.yaml && git diff --exit-code -- database/sqlc
+
+      - name: Verify Swagger output
+        run: go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal && git diff --exit-code -- docs
 
   # ---------------------------------------------------------------------------
   # Publish — build and push Docker image to GHCR (main only)

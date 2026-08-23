@@ -169,10 +169,16 @@ func containsClinicService(slice []ClinicService, v ClinicService) bool {
 // VaccinationHistorySpecification filters the pet_vaccination_history view.
 type VaccinationHistorySpecification struct {
 	PetIDs            []uint
+	EmployeeIDs       []uint
 	VaccineCatalogIDs []uint
 	DateFrom          *time.Time
 	DateTo            *time.Time
 	page.Pagination
+}
+
+func (s *VaccinationHistorySpecification) WithEmployeeIDs(ids ...uint) *VaccinationHistorySpecification {
+	s.EmployeeIDs = ids
+	return s
 }
 
 func (s *VaccinationHistorySpecification) WithPetIDs(ids ...uint) *VaccinationHistorySpecification {

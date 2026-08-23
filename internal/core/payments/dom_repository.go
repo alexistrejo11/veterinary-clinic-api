@@ -10,7 +10,7 @@ import (
 
 type PaymentRepository interface {
 	GetByID(ctx context.Context, id PaymentID) (Payment, error)
-	GetByTransactionID(ctx context.Context, transactionID string) (Payment, error)
+	GetByReference(ctx context.Context, reference string) (Payment, error)
 	GetByIDAndCustomerID(ctx context.Context, id PaymentID, customerID customers.CustomerID) (Payment, error)
 
 	GetBySpecification(ctx context.Context, spec PaymentSpecification) (page.Page[Payment], error)
@@ -26,10 +26,13 @@ type PaymentRepository interface {
 	FindSuccessfulPayments(ctx context.Context, pageInput page.Pagination) (page.Page[Payment], error)
 	*/
 	ExistsByID(ctx context.Context, id PaymentID) (bool, error)
-	ExistsByTransactionID(ctx context.Context, transactionID string) (bool, error)
+	ExistsByReference(ctx context.Context, reference string) (bool, error)
 	ExistsPendingByCustomerID(ctx context.Context, customerID customers.CustomerID) (bool, error)
 
 	Save(ctx context.Context, paymentEntity *Payment) error
+	SettleAuthorized(ctx context.Context, id PaymentID, receiptNumber, reason string) (Payment, error)
+	CancelAuthorized(ctx context.Context, id PaymentID, reason string) (Payment, error)
+	RefundSettled(ctx context.Context, id PaymentID, reason string) (Payment, error)
 	SoftDelete(ctx context.Context, id PaymentID) error
 	HardDelete(ctx context.Context, id PaymentID) error
 

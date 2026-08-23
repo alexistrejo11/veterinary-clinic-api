@@ -41,6 +41,11 @@ WHERE id = $1;
 -- name: HardDeleteCustomer :exec
 DELETE FROM customers WHERE id = $1;
 
+-- name: RestoreCustomer :exec
+UPDATE customers
+SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 AND deleted_at IS NOT NULL;
+
 -- name: ExistsCustomerByID :one
 SELECT COUNT(*) > 0
 FROM customers
@@ -69,15 +74,17 @@ FROM customers
 WHERE deleted_at IS NULL
   AND ($1::int = 0 OR user_id = $1)
   AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false))
+  AND ($3::text = '' OR first_name ILIKE '%' || $3 || '%' OR last_name ILIKE '%' || $3 || '%')
 ORDER BY created_at DESC
-LIMIT $3 OFFSET $4;
+LIMIT $4 OFFSET $5;
 
 -- name: CountCustomersBySpec :one
 SELECT COUNT(*)
 FROM customers
 WHERE deleted_at IS NULL
   AND ($1::int = 0 OR user_id = $1)
-  AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false));
+  AND ($2::int = -1 OR ($2 = 1 AND is_active = true) OR ($2 = 0 AND is_active = false))
+  AND ($3::text = '' OR first_name ILIKE '%' || $3 || '%' OR last_name ILIKE '%' || $3 || '%');
 
 -- name: IsDeletedCustomerByID :one
 SELECT (deleted_at IS NOT NULL) AS is_deleted
