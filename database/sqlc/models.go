@@ -415,20 +415,20 @@ type Medication struct {
 type Notification struct {
 	ID                int32
 	UserID            int32
+	SenderID          pgtype.Int4
 	Title             string
 	Subject           string
 	Message           string
 	Token             string
 	NotificationType  string
 	Channel           string
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	SenderID          pgtype.Int4
 	Status            string
 	FailureMessage    pgtype.Text
 	ProviderReference pgtype.Text
 	SentAt            pgtype.Timestamptz
 	Attempts          int32
+	CreatedAt         pgtype.Timestamptz
+	UpdatedAt         pgtype.Timestamptz
 }
 
 type Payment struct {
@@ -440,6 +440,8 @@ type Payment struct {
 	MedSessionID     pgtype.Int4
 	Reference        pgtype.Text
 	Description      pgtype.Text
+	AppointmentID    pgtype.Int4
+	Reason           pgtype.Text
 	DueDate          pgtype.Timestamptz
 	PaidAt           pgtype.Timestamptz
 	RefundedAt       pgtype.Timestamptz
@@ -451,8 +453,6 @@ type Payment struct {
 	InvoiceID        pgtype.Text
 	RefundAmount     pgtype.Numeric
 	FailureReason    pgtype.Text
-	AppointmentID    pgtype.Int4
-	Reason           pgtype.Text
 	ReceiptNumber    pgtype.Text
 }
 
@@ -511,6 +511,7 @@ type PetDeworming struct {
 	AdministeredBy   pgtype.Int4
 	Notes            pgtype.Text
 	CreatedAt        pgtype.Timestamptz
+	DeletedAt        pgtype.Timestamptz
 }
 
 type PetFeedingInstruction struct {

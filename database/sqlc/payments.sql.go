@@ -18,7 +18,7 @@ UPDATE payments SET
     reason = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND status IN ('authorized', 'pending', 'overdue') AND deleted_at IS NULL
-RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number
+RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number
 `
 
 type CancelAuthorizedPaymentParams struct {
@@ -38,6 +38,8 @@ func (q *Queries) CancelAuthorizedPayment(ctx context.Context, arg CancelAuthori
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -49,8 +51,6 @@ func (q *Queries) CancelAuthorizedPayment(ctx context.Context, arg CancelAuthori
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
@@ -137,7 +137,7 @@ INSERT INTO payments (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
     $11, $12, $13, $14, $15, $16
 )
-RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number
+RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number
 `
 
 type CreatePaymentParams struct {
@@ -188,6 +188,8 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -199,8 +201,6 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
@@ -245,7 +245,7 @@ func (q *Queries) ExistsPendingPaymentByCustomerID(ctx context.Context, paidByCu
 }
 
 const findPaymentByID = `-- name: FindPaymentByID :one
-SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number FROM payments
+SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number FROM payments
 WHERE id = $1 AND deleted_at IS NULL
 `
 
@@ -261,6 +261,8 @@ func (q *Queries) FindPaymentByID(ctx context.Context, id int32) (Payment, error
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -272,15 +274,13 @@ func (q *Queries) FindPaymentByID(ctx context.Context, id int32) (Payment, error
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
 }
 
 const findPaymentByIDAndCustomerID = `-- name: FindPaymentByIDAndCustomerID :one
-SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number FROM payments
+SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number FROM payments
 WHERE id = $1 AND paid_by_customer_id = $2 AND deleted_at IS NULL
 `
 
@@ -301,6 +301,8 @@ func (q *Queries) FindPaymentByIDAndCustomerID(ctx context.Context, arg FindPaym
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -312,15 +314,13 @@ func (q *Queries) FindPaymentByIDAndCustomerID(ctx context.Context, arg FindPaym
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
 }
 
 const findPaymentByReference = `-- name: FindPaymentByReference :one
-SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number FROM payments
+SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number FROM payments
 WHERE reference = $1 AND deleted_at IS NULL
 `
 
@@ -336,6 +336,8 @@ func (q *Queries) FindPaymentByReference(ctx context.Context, reference pgtype.T
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -347,15 +349,13 @@ func (q *Queries) FindPaymentByReference(ctx context.Context, reference pgtype.T
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
 }
 
 const findPaymentsBySpecification = `-- name: FindPaymentsBySpecification :many
-SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number FROM payments
+SELECT payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number FROM payments
 WHERE deleted_at IS NULL
   AND ($1::int IS NULL OR paid_by_customer_id = $1)
   AND ($2::payment_status IS NULL OR status = $2)
@@ -405,6 +405,8 @@ func (q *Queries) FindPaymentsBySpecification(ctx context.Context, arg FindPayme
 			&i.MedSessionID,
 			&i.Reference,
 			&i.Description,
+			&i.AppointmentID,
+			&i.Reason,
 			&i.DueDate,
 			&i.PaidAt,
 			&i.RefundedAt,
@@ -416,8 +418,6 @@ func (q *Queries) FindPaymentsBySpecification(ctx context.Context, arg FindPayme
 			&i.InvoiceID,
 			&i.RefundAmount,
 			&i.FailureReason,
-			&i.AppointmentID,
-			&i.Reason,
 			&i.ReceiptNumber,
 		); err != nil {
 			return nil, err
@@ -447,7 +447,7 @@ UPDATE payments SET
     reason = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND status = 'paid' AND deleted_at IS NULL
-RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number
+RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number
 `
 
 type RefundSettledPaymentParams struct {
@@ -467,6 +467,8 @@ func (q *Queries) RefundSettledPayment(ctx context.Context, arg RefundSettledPay
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -478,8 +480,6 @@ func (q *Queries) RefundSettledPayment(ctx context.Context, arg RefundSettledPay
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
@@ -493,7 +493,7 @@ UPDATE payments SET
     reason = $3,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND status IN ('authorized', 'pending', 'overdue') AND deleted_at IS NULL
-RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number
+RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number
 `
 
 type SettleAuthorizedPaymentParams struct {
@@ -514,6 +514,8 @@ func (q *Queries) SettleAuthorizedPayment(ctx context.Context, arg SettleAuthori
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -525,8 +527,6 @@ func (q *Queries) SettleAuthorizedPayment(ctx context.Context, arg SettleAuthori
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err
@@ -584,7 +584,7 @@ UPDATE payments SET
     failure_reason = $17,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.appointment_id, payments.reason, payments.receipt_number
+RETURNING payments.id, payments.amount, payments.currency, payments.status, payments.method, payments.med_session_id, payments.reference, payments.description, payments.appointment_id, payments.reason, payments.due_date, payments.paid_at, payments.refunded_at, payments.is_active, payments.created_at, payments.updated_at, payments.deleted_at, payments.paid_by_customer_id, payments.invoice_id, payments.refund_amount, payments.failure_reason, payments.receipt_number
 `
 
 type UpdatePaymentParams struct {
@@ -637,6 +637,8 @@ func (q *Queries) UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (P
 		&i.MedSessionID,
 		&i.Reference,
 		&i.Description,
+		&i.AppointmentID,
+		&i.Reason,
 		&i.DueDate,
 		&i.PaidAt,
 		&i.RefundedAt,
@@ -648,8 +650,6 @@ func (q *Queries) UpdatePayment(ctx context.Context, arg UpdatePaymentParams) (P
 		&i.InvoiceID,
 		&i.RefundAmount,
 		&i.FailureReason,
-		&i.AppointmentID,
-		&i.Reason,
 		&i.ReceiptNumber,
 	)
 	return i, err

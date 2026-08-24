@@ -5,7 +5,7 @@ package dtos
 const (
 	maxLenEmail     = 255
 	maxLenPassword  = 128
-	maxLenCode      = 32
+	maxLenCode      = 64
 	maxLenRole      = 50
 	maxLenName      = 200
 	maxLenPhone     = 30
@@ -35,7 +35,7 @@ type RegisterRequest struct {
 // @Description User ID and activation code (e.g. from email link). Supports query params or JSON body.
 type ActivateAccountRequest struct {
 	UserID string `form:"user_id" json:"user_id" binding:"required,max=20"`
-	Code   string `form:"code" json:"code" binding:"required,max=32"`
+	Code   string `form:"code" json:"code" binding:"required,max=64"`
 }
 
 // LoginRequest is the body for POST /auth/login
@@ -87,7 +87,7 @@ type RequestResetPasswordRequest struct {
 // @Description Email, code received by email, and new password.
 type ResetPasswordRequest struct {
 	Email    string `json:"email" binding:"required,email,max=255"`
-	Code     string `json:"code" binding:"required,max=32"`
+	Code     string `json:"code" binding:"required,max=64"`
 	Password string `json:"password" binding:"required,min=8,max=128"`
 }
 

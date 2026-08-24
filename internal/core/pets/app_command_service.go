@@ -1,6 +1,7 @@
 package pets
 
 import (
+	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/page"
 	"context"
 	"errors"
@@ -42,6 +43,7 @@ func (s *petService) CreatePet(ctx context.Context, cmd CreatePetCommand) (Pet, 
 	}
 
 	pet := Pet{
+		Entity:      shared.CreateEntity(NewPetID(0)),
 		CustomerID:  cmd.CustomerID,
 		Name:        cmd.Name,
 		Species:     cmd.Species,

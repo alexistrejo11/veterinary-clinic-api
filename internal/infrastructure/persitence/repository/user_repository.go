@@ -439,6 +439,10 @@ func (r *SqlcUserRepository) toCreateParams(user users.User) sqlc.CreateUserPara
 	if user.TwoFactorAuth.IsEnabled {
 		twoFAMethod = string(user.TwoFactorAuth.Method)
 	}
+	oauthProvider := user.OAuthProvider
+	if oauthProvider == "" {
+		oauthProvider = "local"
+	}
 
 	return sqlc.CreateUserParams{
 		Email:                       r.pgMap.PgText.FromString(user.Email.String()),
@@ -451,7 +455,7 @@ func (r *SqlcUserRepository) toCreateParams(user users.User) sqlc.CreateUserPara
 		PhotoUrl:                    r.pgMap.PgText.FromString(user.Profile.PhotoURL),
 		Bio:                         r.pgMap.PgText.FromString(user.Profile.Bio),
 		DateOfBirth:                 r.pgMap.PgDate.FromTimePtr(user.Profile.DateOfBirth),
-		OauthProvider:               user.OAuthProvider,
+		OauthProvider:               oauthProvider,
 		OauthProviderID:             oauthProviderID,
 		OauthAccessToken:            oauthAccessToken,
 		OauthRefreshToken:           oauthRefreshToken,

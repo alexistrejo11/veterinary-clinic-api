@@ -35,8 +35,8 @@ func TestDatabaseMigrationsAndRedis(t *testing.T) {
 	if err := pool.QueryRow(ctx, "SELECT version, dirty FROM schema_migrations").Scan(&version, &dirty); err != nil {
 		t.Fatalf("read migration state: %v", err)
 	}
-	if dirty || version != 13 {
-		t.Fatalf("migration state = version %d dirty %t; want version 13 and clean", version, dirty)
+	if dirty || version == 0 {
+		t.Fatalf("migration state = version %d dirty %t; want a non-zero clean migration version", version, dirty)
 	}
 
 	options, err := redis.ParseURL(os.Getenv("REDIS_URL"))

@@ -69,6 +69,7 @@ func (s *customerService) CreateCustomer(ctx context.Context, cmd CreateCustomer
 		DateOfBirth: cmd.DateOfBirth,
 	}
 	customer := Customer{
+		Entity:   shared.CreateEntity(NewCustomerID(0)),
 		Person:   sharedPerson,
 		PhotoURL: cmd.PhotoURL,
 		IsActive: cmd.IsActive,

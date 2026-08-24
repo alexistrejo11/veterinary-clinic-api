@@ -4,6 +4,7 @@ import (
 	"clinic-vet-api/internal/core/users"
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
+	"clinic-vet-api/internal/middleware"
 	"clinic-vet-api/internal/shared"
 	"clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/http"
@@ -324,9 +325,7 @@ func NewProfileHandler(queryService users.QueryService, commandService users.Com
 // @Failure      500  {object}  http.APIResponse  "Internal server error"
 // @Router       /profile [get]
 func (h *ProfileHandler) GetProfile(c *gin.Context) {
-	userIDStr := c.GetString("userID")
-
-	userID, err := shared.ParseUserIDFromString(userIDStr)
+	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return
@@ -368,8 +367,6 @@ func (h *ProfileHandler) GetProfile(c *gin.Context) {
 // @Failure      500    {object}  http.APIResponse           "Internal server error"
 // @Router       /profile [put]
 func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
-	userIDStr := c.GetString("userID")
-
 	var requestData dtos.UpdateProfileRequest
 	if err := c.ShouldBindJSON(&requestData); err != nil {
 		errors.RequestBodyDataError(err)
@@ -381,7 +378,7 @@ func (h *ProfileHandler) UpdateProfile(c *gin.Context) {
 		http.ApplicationError(c, err)
 		return
 	}
-	userIDVO, err := shared.ParseUserIDFromString(userIDStr)
+	userIDVO, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
 		http.ApplicationError(c, err)
 		return

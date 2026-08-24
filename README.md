@@ -51,7 +51,7 @@ Production data plane targets **Amazon RDS (PostgreSQL)** and **Upstash Redis**;
 - **JWT authentication & RBAC** — Register, activate, login, refresh, logout, 2FA hooks, password reset ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/features))
 - **Appointment scheduling** — Customer requests, employee assignments, admin search; overlap and hourly capacity rules ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/features))
 - **Customers & employees** — Clinic CRUD with soft-delete and restore ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/features))
-- **Docker & migrations** — Local full stack or API-only profile against cloud DB/Redis ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure))
+- **Docker & migrations** — One-command local stack with isolated PostgreSQL and Redis ([details](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure))
 
 See [Project Features](https://alexis-trejo.com/projects/veterinary-clinic-api/features) for the full breakdown (pets, medical, payments status included).
 
@@ -110,7 +110,7 @@ Full diagram, layers, and decisions: [Architecture](https://alexis-trejo.com/pro
 
 - **Go 1.26.5+**
 - **Docker** & Docker Compose (recommended for local stack)
-- **PostgreSQL** and **Redis** (included through the `full` Compose profile, or cloud URLs in `.env`)
+- **PostgreSQL** and **Redis** (created automatically by Docker Compose for local development)
 
 ---
 
@@ -122,7 +122,8 @@ Full diagram, layers, and decisions: [Architecture](https://alexis-trejo.com/pro
 git clone https://github.com/alexisTrejo11/veterinary-clinic-api.git
 cd veterinary-clinic-api
 cp .env-example .env
-# Edit DATABASE_URL, REDIS_URL, JWT_SECRET (32+ chars), etc.
+# Set JWT_SECRET (32+ chars) and other application settings.
+# Docker Compose supplies local PostgreSQL and Redis URLs automatically.
 ```
 
 ### 2. Local full stack (Postgres + Redis + API)
@@ -130,8 +131,8 @@ cp .env-example .env
 From the repository root:
 
 ```bash
-COMPOSE_PROFILES=full docker compose up --build
-COMPOSE_PROFILES=full docker compose up --build -d
+docker compose up --build
+docker compose up --build -d
 ```
 
 | Service | URL |
@@ -139,7 +140,8 @@ COMPOSE_PROFILES=full docker compose up --build -d
 | API | http://localhost:8000 |
 | Health | http://localhost:8000/health |
 | Swagger | http://localhost:8000/swagger/index.html (dev) |
-| Postgres (host) | `localhost:5431` (default `POSTGRES_PUBLISHED_PORT`) |
+| Postgres | Available only to the API on the Compose network |
+| Redis | Available only to the API on the Compose network |
 
 Migrations run on API startup unless `SKIP_MIGRATIONS=true`.
 
@@ -151,18 +153,6 @@ export $(grep -v '^#' .env | xargs)
 go run ./cmd/migrate    # optional: migrations only
 go run ./cmd/api
 ```
-
-### 4. Dev container (cloud RDS + Upstash)
-
-Point `.env` at your RDS and Upstash URLs, then:
-
-```bash
-COMPOSE_PROFILES=standalone docker compose --env-file .env up --build
-```
-
-See [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure).
-
----
 
 ## Configuration
 
@@ -229,7 +219,7 @@ veterinary-clinic-api/
 ├── database/sqlc/               # Generated query code
 ├── docs/                        # Swagger bundle (docs.go, swagger.*)
 ├── Dockerfile                   # API image build
-├── docker-compose.yml           # Local Compose profiles
+├── docker-compose.yml           # Self-contained local Compose stack
 ├── scripts/                     # entrypoint, URL parsers
 ├── .env-example
 └── go.mod
@@ -246,8 +236,8 @@ veterinary-clinic-api/
 Checklist and cost placeholders: [Infrastructure](https://alexis-trejo.com/projects/veterinary-clinic-api/infrastructure).
 
 ```bash
-# Example: API-only container against cloud DB/Redis
-COMPOSE_PROFILES=standalone docker compose --env-file .env up --build -d
+# Local API, PostgreSQL, and Redis
+docker compose up --build -d
 ```
 
 ---

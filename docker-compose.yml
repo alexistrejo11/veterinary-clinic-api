@@ -1,63 +1,40 @@
 name: clinic-vet-api
 
-# Two mutually exclusive profiles (Compose never infers one named "default"):
-#   standalone -> just the API, using DATABASE_URL / REDIS_URL from .env
-#   full       -> API + bundled Postgres + Redis (URLs rewritten to service names)
-#
-# Usage:
-#   docker compose up --build                      # standalone (COMPOSE_PROFILES in .env)
-#   COMPOSE_PROFILES=full docker compose up --build
-# Do not combine --profile full with COMPOSE_PROFILES=standalone: both API
-# services share the same container name and host port.
-
-# Shared API service config, reused by both the standalone and full-stack variants.
-x-api-base: &api-base
-  build:
-    context: .
-    dockerfile: Dockerfile
-  image: clinic-vet-api:latest
-  env_file:
-    - .env
-  ports:
-    - "${SERVER_PORT:-8000}:${SERVER_PORT:-8000}"
-  restart: unless-stopped
-  networks:
-    - vet_network
-
 services:
-  # --- standalone: API against external URLs ---
+  # The complete local application. DATABASE_URL and REDIS_URL deliberately
+  # target the services below instead of any cloud values in .env.
   api:
-    <<: *api-base
     container_name: clinic_vet_api
-    profiles: [standalone]
-
-  # --- full profile: same app, but pointed at the bundled Postgres/Redis ---
-  api-full:
-    <<: *api-base
-    container_name: clinic_vet_api
-    profiles: [full]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clinic-vet-api:latest
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@postgres:5432/${DATABASE_NAME:-vet_database}?sslmode=disable
       REDIS_URL: redis://:${REDIS_PASSWORD:-vetredis}@redis:6379/${REDIS_DB:-0}
-      # Bundled DB is fresh, so run migrations and wait for it to be ready.
       SKIP_MIGRATIONS: "false"
       SKIP_DB_WAIT: "false"
+    ports:
+      - "${SERVER_PORT:-8000}:${SERVER_PORT:-8000}"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app_network
+      - data_network
 
   postgres:
     image: postgres:16-alpine
     container_name: clinic_vet_postgres
-    profiles: [full]
     environment:
       POSTGRES_USER: ${DATABASE_USER:-postgres}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
       POSTGRES_DB: ${DATABASE_NAME:-vet_database}
-    ports:
-      - "${POSTGRES_PUBLISHED_PORT:-5431}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -67,15 +44,12 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - vet_network
+      - data_network
 
   redis:
     image: redis:7-alpine
     container_name: clinic_vet_redis
-    profiles: [full]
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-vetredis}"]
-    ports:
-      - "${REDIS_PUBLISHED_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -85,11 +59,16 @@ services:
       retries: 10
     restart: unless-stopped
     networks:
-      - vet_network
+      - data_network
 
 networks:
-  vet_network:
+  # Lets the API communicate with external providers (SMTP, Twilio, etc.).
+  app_network:
     driver: bridge
+  # Datastores have no host ports and are reachable only by the API.
+  data_network:
+    driver: bridge
+    internal: true
 
 volumes:
   postgres_data:

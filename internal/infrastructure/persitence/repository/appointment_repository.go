@@ -395,6 +395,7 @@ func (r *SqlcAppointmentRepository) toUpdateParams(appt *appointments.Appointmen
 	}
 	return sqlc.UpdateAppointmentParams{
 		ID:                 int32(appt.ID.Value()),
+		ClinicService:      models.ClinicService(appt.Service.String()),
 		CustomerID:         int32(appt.CustomerID.Value()),
 		EmployeeID:         pgtype.Int4{Int32: employeeID, Valid: appt.EmployeeID != nil},
 		PetID:              int32(appt.PetID.Value()),

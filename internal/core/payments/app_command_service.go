@@ -134,6 +134,7 @@ func (s *commandService) CreatePayment(ctx context.Context, cmd CreatePaymentCom
 	}
 
 	entity := Payment{
+		Entity:           shared.CreateEntity(NewPaymentID(0)),
 		Amount:           amount,
 		Status:           PaymentStatusAuthorized,
 		Method:           cmd.Method,

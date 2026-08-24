@@ -68,26 +68,7 @@ type CreateNotificationParams struct {
 	Channel          string
 }
 
-type CreateNotificationRow struct {
-	ID                int32
-	UserID            int32
-	SenderID          pgtype.Int4
-	Title             string
-	Subject           string
-	Message           string
-	Token             string
-	NotificationType  string
-	Channel           string
-	Status            string
-	FailureMessage    pgtype.Text
-	ProviderReference pgtype.Text
-	SentAt            pgtype.Timestamptz
-	Attempts          int32
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
-func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (CreateNotificationRow, error) {
+func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
 	row := q.db.QueryRow(ctx, createNotification,
 		arg.UserID,
 		arg.SenderID,
@@ -98,7 +79,7 @@ func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotification
 		arg.NotificationType,
 		arg.Channel,
 	)
-	var i CreateNotificationRow
+	var i Notification
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -128,34 +109,15 @@ WHERE ($1::int = 0 OR sender_id = $1)
 ORDER BY created_at DESC
 `
 
-type FindNotificationSummaryRow struct {
-	ID                int32
-	UserID            int32
-	SenderID          pgtype.Int4
-	Title             string
-	Subject           string
-	Message           string
-	Token             string
-	NotificationType  string
-	Channel           string
-	Status            string
-	FailureMessage    pgtype.Text
-	ProviderReference pgtype.Text
-	SentAt            pgtype.Timestamptz
-	Attempts          int32
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
-func (q *Queries) FindNotificationSummary(ctx context.Context, dollar_1 int32) ([]FindNotificationSummaryRow, error) {
+func (q *Queries) FindNotificationSummary(ctx context.Context, dollar_1 int32) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, findNotificationSummary, dollar_1)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []FindNotificationSummaryRow
+	var items []Notification
 	for rows.Next() {
-		var i FindNotificationSummaryRow
+		var i Notification
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -199,34 +161,15 @@ type FindNotificationsByChannelParams struct {
 	Offset  int32
 }
 
-type FindNotificationsByChannelRow struct {
-	ID                int32
-	UserID            int32
-	SenderID          pgtype.Int4
-	Title             string
-	Subject           string
-	Message           string
-	Token             string
-	NotificationType  string
-	Channel           string
-	Status            string
-	FailureMessage    pgtype.Text
-	ProviderReference pgtype.Text
-	SentAt            pgtype.Timestamptz
-	Attempts          int32
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
-func (q *Queries) FindNotificationsByChannel(ctx context.Context, arg FindNotificationsByChannelParams) ([]FindNotificationsByChannelRow, error) {
+func (q *Queries) FindNotificationsByChannel(ctx context.Context, arg FindNotificationsByChannelParams) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, findNotificationsByChannel, arg.Channel, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []FindNotificationsByChannelRow
+	var items []Notification
 	for rows.Next() {
-		var i FindNotificationsByChannelRow
+		var i Notification
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -270,34 +213,15 @@ type FindNotificationsByTypeParams struct {
 	Offset           int32
 }
 
-type FindNotificationsByTypeRow struct {
-	ID                int32
-	UserID            int32
-	SenderID          pgtype.Int4
-	Title             string
-	Subject           string
-	Message           string
-	Token             string
-	NotificationType  string
-	Channel           string
-	Status            string
-	FailureMessage    pgtype.Text
-	ProviderReference pgtype.Text
-	SentAt            pgtype.Timestamptz
-	Attempts          int32
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
-func (q *Queries) FindNotificationsByType(ctx context.Context, arg FindNotificationsByTypeParams) ([]FindNotificationsByTypeRow, error) {
+func (q *Queries) FindNotificationsByType(ctx context.Context, arg FindNotificationsByTypeParams) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, findNotificationsByType, arg.NotificationType, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []FindNotificationsByTypeRow
+	var items []Notification
 	for rows.Next() {
-		var i FindNotificationsByTypeRow
+		var i Notification
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -341,34 +265,15 @@ type FindNotificationsByUserIDParams struct {
 	Offset int32
 }
 
-type FindNotificationsByUserIDRow struct {
-	ID                int32
-	UserID            int32
-	SenderID          pgtype.Int4
-	Title             string
-	Subject           string
-	Message           string
-	Token             string
-	NotificationType  string
-	Channel           string
-	Status            string
-	FailureMessage    pgtype.Text
-	ProviderReference pgtype.Text
-	SentAt            pgtype.Timestamptz
-	Attempts          int32
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
-func (q *Queries) FindNotificationsByUserID(ctx context.Context, arg FindNotificationsByUserIDParams) ([]FindNotificationsByUserIDRow, error) {
+func (q *Queries) FindNotificationsByUserID(ctx context.Context, arg FindNotificationsByUserIDParams) ([]Notification, error) {
 	rows, err := q.db.Query(ctx, findNotificationsByUserID, arg.UserID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []FindNotificationsByUserIDRow
+	var items []Notification
 	for rows.Next() {
-		var i FindNotificationsByUserIDRow
+		var i Notification
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -404,28 +309,9 @@ FROM notifications
 WHERE id = $1
 `
 
-type GetNotificationByIDRow struct {
-	ID                int32
-	UserID            int32
-	SenderID          pgtype.Int4
-	Title             string
-	Subject           string
-	Message           string
-	Token             string
-	NotificationType  string
-	Channel           string
-	Status            string
-	FailureMessage    pgtype.Text
-	ProviderReference pgtype.Text
-	SentAt            pgtype.Timestamptz
-	Attempts          int32
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-}
-
-func (q *Queries) GetNotificationByID(ctx context.Context, id int32) (GetNotificationByIDRow, error) {
+func (q *Queries) GetNotificationByID(ctx context.Context, id int32) (Notification, error) {
 	row := q.db.QueryRow(ctx, getNotificationByID, id)
-	var i GetNotificationByIDRow
+	var i Notification
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

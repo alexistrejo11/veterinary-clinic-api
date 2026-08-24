@@ -46,6 +46,8 @@ type APIConfig struct {
 	SMTPConfig             notification.SMTPConfig
 	TwilioClient           *twilio.RestClient
 	TwilioFrom             string
+	EmailSender            notifications.EmailSender
+	SMSSender              notifications.SMSender
 }
 
 func (c *APIConfig) Validate() error {
@@ -92,6 +94,12 @@ func Bootstrap(
 		TwilioClient:           twilioClient,
 		TwilioFrom:             twilioFrom,
 	}
+	return BootstrapWithConfig(config)
+}
+
+// BootstrapWithConfig wires all modules from a complete configuration. Tests can
+// inject notification senders to exercise the real router without external providers.
+func BootstrapWithConfig(config *APIConfig) error {
 	if err := config.Validate(); err != nil {
 		return fmt.Errorf("validate API config: %w", err)
 	}
@@ -99,33 +107,41 @@ func Bootstrap(
 	pgMap := mapper.NewSqlcFieldMapper()
 
 	// ─── Repositories ───────────────────────────────────────────────────────
-	addrRepo := repository.NewAddressSqlcRepository(queries)
-	userRepo := repository.NewSqlcUserRepository(queries, pgMap)
-	customerRepo := repository.NewCustomersSqlcRepository(queries)
-	employeeRepo := repository.NewEmployeeSqlcRepository(queries)
-	petRepo := repository.NewPetSqlcRepository(queries)
-	appointmentRepo := repository.NewSqlcAppointmentRepository(queries)
-	paymentRepo := repository.NewPaymentSqlcRepository(queries)
-	notificationRepo := repository.NewSqlcNotificationRepository(queries)
-	medicalSessionRepo := repository.NewMedicalSessionSqlcRepository(queries)
-	vaccinationRepo := repository.NewSessionVaccinationSqlcRepository(queries)
-	surgeryRepo := repository.NewSessionSurgerySqlcRepository(queries)
-	prescriptionRepo := repository.NewSessionPrescriptionSqlcRepository(queries)
-	attachmentRepo := repository.NewSessionAttachmentSqlcRepository(queries)
-	sessionServiceRepo := repository.NewSessionServiceSqlcRepository(queries)
-	vaccineCatalogRepo := repository.NewVaccineCatalogSqlcRepository(queries)
-	medicationRepo := repository.NewMedicationSqlcRepository(queries)
-	serviceCatalogRepo := repository.NewServiceCatalogSqlcRepository(queries)
+	addrRepo := repository.NewAddressSqlcRepository(config.Queries)
+	userRepo := repository.NewSqlcUserRepository(config.Queries, pgMap)
+	customerRepo := repository.NewCustomersSqlcRepository(config.Queries)
+	employeeRepo := repository.NewEmployeeSqlcRepository(config.Queries)
+	petRepo := repository.NewPetSqlcRepository(config.Queries)
+	appointmentRepo := repository.NewSqlcAppointmentRepository(config.Queries)
+	paymentRepo := repository.NewPaymentSqlcRepository(config.Queries)
+	notificationRepo := repository.NewSqlcNotificationRepository(config.Queries)
+	medicalSessionRepo := repository.NewMedicalSessionSqlcRepository(config.Queries)
+	vaccinationRepo := repository.NewSessionVaccinationSqlcRepository(config.Queries)
+	surgeryRepo := repository.NewSessionSurgerySqlcRepository(config.Queries)
+	prescriptionRepo := repository.NewSessionPrescriptionSqlcRepository(config.Queries)
+	attachmentRepo := repository.NewSessionAttachmentSqlcRepository(config.Queries)
+	sessionServiceRepo := repository.NewSessionServiceSqlcRepository(config.Queries)
+	vaccineCatalogRepo := repository.NewVaccineCatalogSqlcRepository(config.Queries)
+	medicationRepo := repository.NewMedicationSqlcRepository(config.Queries)
+	serviceCatalogRepo := repository.NewServiceCatalogSqlcRepository(config.Queries)
 
 	// ─── Shared ─────────────────────────────────────────────────────────────
 	passwordEncoder := password.NewPasswordEncoder()
-	emailSender, err := notification.NewSMTPSender(config.SMTPConfig)
-	if err != nil {
-		return fmt.Errorf("create SMTP sender: %w", err)
+	emailSender := config.EmailSender
+	if emailSender == nil {
+		var err error
+		emailSender, err = notification.NewSMTPSender(config.SMTPConfig)
+		if err != nil {
+			return fmt.Errorf("create SMTP sender: %w", err)
+		}
 	}
-	smsSender, err := notification.NewTwilioSender(config.TwilioClient, config.TwilioFrom)
-	if err != nil {
-		return fmt.Errorf("create Twilio sender: %w", err)
+	smsSender := config.SMSSender
+	if smsSender == nil {
+		var err error
+		smsSender, err = notification.NewTwilioSender(config.TwilioClient, config.TwilioFrom)
+		if err != nil {
+			return fmt.Errorf("create Twilio sender: %w", err)
+		}
 	}
 	notificationSvc := notifications.NewNotificationService(notificationRepo, emailSender, smsSender)
 

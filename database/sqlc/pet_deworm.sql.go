@@ -121,7 +121,7 @@ INSERT INTO pet_deworming (
 ) VALUES (
     $1, $2, $3, $4, $5, $6
 )
-RETURNING id, pet_id, medication_name, administered_date, next_due_date, administered_by, notes, created_at
+RETURNING id, pet_id, medication_name, administered_date, next_due_date, administered_by, notes, created_at, deleted_at
 `
 
 type CreateDewormingParams struct {
@@ -152,6 +152,7 @@ func (q *Queries) CreateDeworming(ctx context.Context, arg CreateDewormingParams
 		&i.AdministeredBy,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -164,9 +165,20 @@ FROM pet_deworming
 WHERE id = $1
 `
 
-func (q *Queries) FindDewormingByID(ctx context.Context, id int32) (PetDeworming, error) {
+type FindDewormingByIDRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingByID(ctx context.Context, id int32) (FindDewormingByIDRow, error) {
 	row := q.db.QueryRow(ctx, findDewormingByID, id)
-	var i PetDeworming
+	var i FindDewormingByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.PetID,
@@ -193,9 +205,20 @@ type FindDewormingByIDAndEmployeeIDParams struct {
 	AdministeredBy pgtype.Int4
 }
 
-func (q *Queries) FindDewormingByIDAndEmployeeID(ctx context.Context, arg FindDewormingByIDAndEmployeeIDParams) (PetDeworming, error) {
+type FindDewormingByIDAndEmployeeIDRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingByIDAndEmployeeID(ctx context.Context, arg FindDewormingByIDAndEmployeeIDParams) (FindDewormingByIDAndEmployeeIDRow, error) {
 	row := q.db.QueryRow(ctx, findDewormingByIDAndEmployeeID, arg.ID, arg.AdministeredBy)
-	var i PetDeworming
+	var i FindDewormingByIDAndEmployeeIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.PetID,
@@ -222,9 +245,20 @@ type FindDewormingByIDAndPetIDParams struct {
 	PetID int32
 }
 
-func (q *Queries) FindDewormingByIDAndPetID(ctx context.Context, arg FindDewormingByIDAndPetIDParams) (PetDeworming, error) {
+type FindDewormingByIDAndPetIDRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingByIDAndPetID(ctx context.Context, arg FindDewormingByIDAndPetIDParams) (FindDewormingByIDAndPetIDRow, error) {
 	row := q.db.QueryRow(ctx, findDewormingByIDAndPetID, arg.ID, arg.PetID)
-	var i PetDeworming
+	var i FindDewormingByIDAndPetIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.PetID,
@@ -255,7 +289,18 @@ type FindDewormingsByDateRangeParams struct {
 	Offset             int32
 }
 
-func (q *Queries) FindDewormingsByDateRange(ctx context.Context, arg FindDewormingsByDateRangeParams) ([]PetDeworming, error) {
+type FindDewormingsByDateRangeRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingsByDateRange(ctx context.Context, arg FindDewormingsByDateRangeParams) ([]FindDewormingsByDateRangeRow, error) {
 	rows, err := q.db.Query(ctx, findDewormingsByDateRange,
 		arg.AdministeredDate,
 		arg.AdministeredDate_2,
@@ -266,9 +311,9 @@ func (q *Queries) FindDewormingsByDateRange(ctx context.Context, arg FindDewormi
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PetDeworming
+	var items []FindDewormingsByDateRangeRow
 	for rows.Next() {
-		var i PetDeworming
+		var i FindDewormingsByDateRangeRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.PetID,
@@ -305,15 +350,26 @@ type FindDewormingsByEmployeeIDParams struct {
 	Offset         int32
 }
 
-func (q *Queries) FindDewormingsByEmployeeID(ctx context.Context, arg FindDewormingsByEmployeeIDParams) ([]PetDeworming, error) {
+type FindDewormingsByEmployeeIDRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingsByEmployeeID(ctx context.Context, arg FindDewormingsByEmployeeIDParams) ([]FindDewormingsByEmployeeIDRow, error) {
 	rows, err := q.db.Query(ctx, findDewormingsByEmployeeID, arg.AdministeredBy, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PetDeworming
+	var items []FindDewormingsByEmployeeIDRow
 	for rows.Next() {
-		var i PetDeworming
+		var i FindDewormingsByEmployeeIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.PetID,
@@ -350,15 +406,26 @@ type FindDewormingsByPetIDParams struct {
 	Offset int32
 }
 
-func (q *Queries) FindDewormingsByPetID(ctx context.Context, arg FindDewormingsByPetIDParams) ([]PetDeworming, error) {
+type FindDewormingsByPetIDRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingsByPetID(ctx context.Context, arg FindDewormingsByPetIDParams) ([]FindDewormingsByPetIDRow, error) {
 	rows, err := q.db.Query(ctx, findDewormingsByPetID, arg.PetID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PetDeworming
+	var items []FindDewormingsByPetIDRow
 	for rows.Next() {
-		var i PetDeworming
+		var i FindDewormingsByPetIDRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.PetID,
@@ -395,15 +462,26 @@ type FindDewormingsByPetIDsParams struct {
 	Offset  int32
 }
 
-func (q *Queries) FindDewormingsByPetIDs(ctx context.Context, arg FindDewormingsByPetIDsParams) ([]PetDeworming, error) {
+type FindDewormingsByPetIDsRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingsByPetIDs(ctx context.Context, arg FindDewormingsByPetIDsParams) ([]FindDewormingsByPetIDsRow, error) {
 	rows, err := q.db.Query(ctx, findDewormingsByPetIDs, arg.Column1, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PetDeworming
+	var items []FindDewormingsByPetIDsRow
 	for rows.Next() {
-		var i PetDeworming
+		var i FindDewormingsByPetIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.PetID,
@@ -471,7 +549,18 @@ type FindDewormingsBySpecParams struct {
 	LimitVal              int32
 }
 
-func (q *Queries) FindDewormingsBySpec(ctx context.Context, arg FindDewormingsBySpecParams) ([]PetDeworming, error) {
+type FindDewormingsBySpecRow struct {
+	ID               int32
+	PetID            int32
+	MedicationName   string
+	AdministeredDate pgtype.Date
+	NextDueDate      pgtype.Date
+	AdministeredBy   pgtype.Int4
+	Notes            pgtype.Text
+	CreatedAt        pgtype.Timestamptz
+}
+
+func (q *Queries) FindDewormingsBySpec(ctx context.Context, arg FindDewormingsBySpecParams) ([]FindDewormingsBySpecRow, error) {
 	rows, err := q.db.Query(ctx, findDewormingsBySpec,
 		arg.ID,
 		arg.PetID,
@@ -493,9 +582,9 @@ func (q *Queries) FindDewormingsBySpec(ctx context.Context, arg FindDewormingsBy
 		return nil, err
 	}
 	defer rows.Close()
-	var items []PetDeworming
+	var items []FindDewormingsBySpecRow
 	for rows.Next() {
-		var i PetDeworming
+		var i FindDewormingsBySpecRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.PetID,
@@ -546,7 +635,7 @@ SET
     administered_by = $5,
     notes = $6
 WHERE id = $1
-RETURNING id, pet_id, medication_name, administered_date, next_due_date, administered_by, notes, created_at
+RETURNING id, pet_id, medication_name, administered_date, next_due_date, administered_by, notes, created_at, deleted_at
 `
 
 type UpdateDewormingParams struct {
@@ -577,6 +666,7 @@ func (q *Queries) UpdateDeworming(ctx context.Context, arg UpdateDewormingParams
 		&i.AdministeredBy,
 		&i.Notes,
 		&i.CreatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

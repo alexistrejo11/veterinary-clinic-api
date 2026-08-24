@@ -40,10 +40,25 @@ following work was completed after the original audit:
 - CI runs build, unit tests, race tests, vet, migrations, PostgreSQL/Redis smoke
   verification, SQLC generation, and Swagger generation checks.
 
-Phase 9 remains in progress. The route contract, unit, handler, migration, and
-PostgreSQL/Redis smoke checks exist, but the API does not yet have complete
-HTTP-to-database end-to-end coverage for every advertised operation and error
-case.
+Phase 9 remains in progress. A Testcontainers PostgreSQL/Redis E2E harness now
+constructs the real router with per-test PostgreSQL schemas and deterministic
+notification fakes. The registration, activation, login, authenticated-profile,
+health, validation, unauthenticated-profile, and customer pet create/read
+workflows run through it. Customer appointment request, ownership read,
+cancellation, and persisted status transitions are also covered, along with
+authenticated customer notification reads. Admin payment creation and
+cancellation, including customer payment visibility and ledger persistence, are
+covered through role middleware.
+Administrative manual email notifications are covered with a persisted staff
+fixture and deterministic sender-delivery assertion.
+Medical session creation is covered for an administrative clinician fixture,
+with veterinarian assignment access and customer read access asserted through
+their respective route policies.
+Every registered protected operation is also swept without credentials and must
+return `401`; the lifecycle suite asserts representative customer/staff role
+denials return `403`.
+Complete HTTP-to-database coverage for every advertised operation and error case
+is still outstanding.
 
 ## Canonical Authorization Model
 
@@ -382,7 +397,8 @@ Acceptance criteria:
 ### Phase 9: Contract tests and dead-code cleanup
 
 Status: In progress. Route contract, generated-artifact, race, vet, migration,
-and PostgreSQL/Redis smoke checks are complete; endpoint E2E coverage remains.
+and PostgreSQL/Redis smoke checks are complete. Isolated auth/profile/health
+E2E coverage is in CI; remaining resource lifecycle E2E coverage is outstanding.
 
 Implementation notes:
 
