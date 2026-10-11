@@ -67,6 +67,18 @@ func (ctrl *UserHandler) GetUserByID(c *gin.Context) {
 	http.Found(c, userResponse, "User")
 }
 
+// GetUserByEmail godoc
+// @Summary      Get user by email
+// @Description  Returns a user by email. Requires admin role.
+// @Tags         users
+// @Produce      json
+// @Security     BearerAuth
+// @Param        email  path      string  true  "User email"
+// @Success      200    {object}  http.APIResponse{data=dtos.UserResponse}  "User found"
+// @Failure      422    {object}  http.APIResponse  "Invalid email"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "User not found"
+// @Router       /users/email/{email} [get]
 func (ctrl *UserHandler) GetUserByEmail(c *gin.Context) {
 	emailStr := c.Param("email")
 	if emailStr == "" {
@@ -90,6 +102,18 @@ func (ctrl *UserHandler) GetUserByEmail(c *gin.Context) {
 	http.Found(c, userResponse, "User")
 }
 
+// GetUserByPhone godoc
+// @Summary      Get user by phone
+// @Description  Returns a user by phone number. Requires admin role.
+// @Tags         users
+// @Produce      json
+// @Security     BearerAuth
+// @Param        phone  query     string  true  "User phone number"
+// @Success      200    {object}  http.APIResponse{data=dtos.UserResponse}  "User found"
+// @Failure      400    {object}  http.APIResponse  "Invalid or missing phone"
+// @Failure      401    {object}  http.APIResponse  "Unauthorized"
+// @Failure      404    {object}  http.APIResponse  "User not found"
+// @Router       /users/phone [get]
 func (ctrl *UserHandler) GetUserByPhone(ctx *gin.Context) {
 	phoneStr := ctx.Query("phone")
 	if phoneStr == "" {

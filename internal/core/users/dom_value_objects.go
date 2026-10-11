@@ -133,39 +133,3 @@ func NewPersonName(firstName, lastName string) (PersonName, error) {
 func (n PersonName) FullName() string {
 	return fmt.Sprintf("%s %s", n.FirstName, n.LastName)
 }
-
-// ============================================================================
-// Age Value Object
-// ============================================================================
-
-const (
-	MaxRealisticAgeYears = 50
-)
-
-// Age represents a person's age in years and months
-type Age struct {
-	Years  int
-	Months int
-}
-
-// Validate validates the age business rules
-func (a *Age) Validate() error {
-	ctx := context.Background()
-	operation := "ValidateAge"
-
-	if a.Years < 0 || a.Months < 0 {
-		return NegativeAgeError(ctx, operation)
-	}
-
-	// Normalize months to years
-	if a.Months >= 12 {
-		a.Years += a.Months / 12
-		a.Months = a.Months % 12
-	}
-
-	if a.Years > MaxRealisticAgeYears {
-		return UnrealisticAgeError(ctx, MaxRealisticAgeYears, operation)
-	}
-
-	return nil
-}

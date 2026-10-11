@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	stdhttp "net/http"
 
 	"clinic-vet-api/internal/core/appointments"
 	"clinic-vet-api/internal/core/customers"
@@ -9,6 +10,7 @@ import (
 	"clinic-vet-api/internal/core/pets"
 	"clinic-vet-api/internal/infrastructure/http/handlers/dtos"
 	"clinic-vet-api/internal/infrastructure/http/handlers/mappers"
+	apperrors "clinic-vet-api/internal/shared/errors"
 	"clinic-vet-api/internal/shared/http"
 	"clinic-vet-api/internal/shared/page"
 
@@ -53,6 +55,15 @@ func parseAppointmentIDFromParam(c *gin.Context) (appointments.AppointmentID, er
 		return appointments.AppointmentID{}, err
 	}
 	return appointments.NewAppointmentID(id), nil
+}
+
+func invalidQueryError(err error) error {
+	return apperrors.BaseApplicationError{
+		Code:       "INVALID_URL_PARAMS",
+		Type:       "routing",
+		Message:    err.Error(),
+		StatusCode: stdhttp.StatusBadRequest,
+	}
 }
 
 // ------------------------------------------------------------
@@ -776,7 +787,10 @@ func (h *AppointmentHandler) GetAppointmentsByPetID(c *gin.Context) {
 // @Router       /appointments [post]
 func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
 	logic := func(ctx *gin.Context, req dtos.AppointmentCreateRequest) (any, error) {
-		optEmployeeID, _ := OptionalEmployeeIDFromQuery(ctx)
+		optEmployeeID, err := OptionalEmployeeIDFromQuery(ctx)
+		if err != nil {
+			return nil, invalidQueryError(err)
+		}
 		return h.createAppointmentInternal(ctx, req, optEmployeeID)
 	}
 	http.HandleCreateRequest(h.validator, "Appointment", logic)(c)
@@ -918,8 +932,12 @@ func (h *AppointmentHandler) CompleteAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
+		employeeID, err := OptionalEmployeeIDFromQuery(ctx)
+		if err != nil {
+			return nil, invalidQueryError(err)
+		}
 		notes := ctx.Query("notes")
-		return h.completeInternal(ctx, apptID.Value(), nil, notes)
+		return h.completeInternal(ctx, apptID.Value(), employeeID, notes)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment completed successfully")
@@ -948,8 +966,12 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
+		employeeID, err := OptionalEmployeeIDFromQuery(ctx)
+		if err != nil {
+			return nil, invalidQueryError(err)
+		}
 		reason := ctx.Query("reason")
-		return h.cancelInternal(ctx, apptID.Value(), nil, nil, reason)
+		return h.cancelInternal(ctx, apptID.Value(), employeeID, nil, reason)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment cancelled successfully")
@@ -977,7 +999,11 @@ func (h *AppointmentHandler) NotAttendAppointment(c *gin.Context) {
 		if err != nil {
 			return nil, err
 		}
-		return h.notAttendInternal(ctx, apptID.Value(), nil)
+		employeeID, err := OptionalEmployeeIDFromQuery(ctx)
+		if err != nil {
+			return nil, invalidQueryError(err)
+		}
+		return h.notAttendInternal(ctx, apptID.Value(), employeeID)
 	}
 	http.HandleRequestNoBodyWithResponder(h.validator, logic, func(c *gin.Context, _ any) {
 		http.Success(c, nil, "Appointment marked as not attended successfully")

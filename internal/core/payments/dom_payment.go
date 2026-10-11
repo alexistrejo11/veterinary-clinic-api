@@ -222,41 +222,6 @@ func (p *Payment) Refund(ctx context.Context) error {
 	return nil
 }
 
-func (p *Payment) MarkAsOverdue(ctx context.Context) error {
-	operation := "MarkAsOverdue"
-
-	allowedStatuses := []PaymentStatus{
-		PaymentStatusFailed,
-		PaymentStatusPending,
-	}
-
-	if !p.canTransitionStatus(allowedStatuses) {
-		return CannotMarkOverdueError(ctx, p.Status, operation)
-	}
-
-	if p.DueDate != nil && time.Now().Before(*p.DueDate) {
-		return DueDateNotReachedError(ctx, *p.DueDate, operation)
-	}
-
-	p.Status = PaymentStatusOverdue
-	p.IncrementVersion()
-	return nil
-}
-
-func (p *Payment) MarkAsFailed(ctx context.Context) error {
-	operation := "MarkAsFailed"
-
-	allowedStatuses := []PaymentStatus{PaymentStatusPending}
-
-	if !p.canTransitionStatus(allowedStatuses) {
-		return CannotMarkFailedError(ctx, p.Status, operation)
-	}
-
-	p.Status = PaymentStatusFailed
-	p.IncrementVersion()
-	return nil
-}
-
 func (p *Payment) Update(ctx context.Context, amount *shared.Money, paymentMethod *PaymentMethod, description *string, dueDate *time.Time) error {
 	operation := "UpdatePayment"
 
@@ -292,18 +257,6 @@ func (p *Payment) Update(ctx context.Context, amount *shared.Money, paymentMetho
 	return nil
 }
 
-// Métodos auxiliares (se mantienen igual pero con mejor documentación)
-func (p *Payment) CanRetry() bool {
-	return p.Status == PaymentStatusFailed || p.Status == PaymentStatusPending
-}
-
-func (p *Payment) AmountDue() shared.Money {
-	if p.IsPaid() || p.IsRefunded() || p.IsCancelled() {
-		return shared.NewMoney(p.Amount.Amount(), p.Amount.Currency())
-	}
-	return p.Amount
-}
-
 func (p *Payment) canTransitionStatus(allowedStatuses []PaymentStatus) bool {
 	return slices.Contains(allowedStatuses, p.Status)
 }
@@ -311,29 +264,8 @@ func (p *Payment) canTransitionStatus(allowedStatuses []PaymentStatus) bool {
 // RequiresSettlement indicates that an authorized local ledger entry awaits staff recording.
 func (p *Payment) RequiresSettlement() bool { return p.Status == PaymentStatusAuthorized }
 
-func (p *Payment) CanBeRefunded() bool {
-	return p.Status == PaymentStatusPaid &&
-		p.PaidAt != nil &&
-		!p.isRefundPeriodExpired()
-}
-
-func (p *Payment) DaysOverdue() int {
-	if !p.IsOverdue() || p.DueDate == nil {
-		return 0
-	}
-	return int(time.Since(*p.DueDate).Hours() / 24)
-}
-
 func (p *Payment) IsPaid() bool {
 	return p.Status == PaymentStatusPaid
-}
-
-func (p *Payment) IsPending() bool {
-	return p.Status == PaymentStatusPending
-}
-
-func (p *Payment) IsFailed() bool {
-	return p.Status == PaymentStatusFailed
 }
 
 func (p *Payment) IsRefunded() bool {
@@ -342,14 +274,6 @@ func (p *Payment) IsRefunded() bool {
 
 func (p *Payment) IsCancelled() bool {
 	return p.Status == PaymentStatusCancelled
-}
-
-func (p *Payment) IsOverdue() bool {
-	return p.Status == PaymentStatusOverdue
-}
-
-func (p *Payment) IsDisputed() bool {
-	return p.Status == PaymentStatusDisputed
 }
 
 func (p *Payment) IsRefundable() bool {

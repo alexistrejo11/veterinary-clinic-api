@@ -104,7 +104,10 @@ func LoadSettings() (*AppSettings, error) {
 }
 
 func loadServerConfig(config *ServerConfig) error {
-	config.Port = getEnvWithDefault("SERVER_PORT", "8080")
+	config.Port = os.Getenv("SERVER_PORT")
+	if config.Port == "" {
+		return fmt.Errorf("SERVER_PORT is required")
+	}
 	config.Host = getEnvWithDefault("SERVER_HOST", "0.0.0.0")
 	config.Environment = getEnvWithDefault("ENVIRONMENT", "development")
 

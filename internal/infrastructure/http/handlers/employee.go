@@ -58,6 +58,18 @@ func (s *EmployeeHandler) GetEmployeeByID(c *gin.Context) {
 	http.Found(c, employeeResponse, "Employee")
 }
 
+// GetActiveEmployees godoc
+// @Summary      List active employees
+// @Description  Returns active employees with pagination. Requires admin role.
+// @Tags         employees
+// @Produce      json
+// @Security     BearerAuth
+// @Param        page_number  query     int  false  "Page number"
+// @Param        page_size    query     int  false  "Page size"
+// @Success      200          {object}  http.APIResponse{data=[]dtos.EmployeeResponse}  "Active employees"
+// @Failure      400          {object}  http.APIResponse  "Invalid pagination"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Router       /employees/active [get]
 func (s *EmployeeHandler) GetActiveEmployees(c *gin.Context) {
 	var requestBodyData dtos.EmployeeSearchRequest
 	if err := http.ShouldBindAndValidateQuery(c, &requestBodyData, s.validator); err != nil {
@@ -77,6 +89,19 @@ func (s *EmployeeHandler) GetActiveEmployees(c *gin.Context) {
 	http.Paginated(c, &employeeResponses, "Employees")
 }
 
+// GetEmployeesBySpecialty godoc
+// @Summary      List employees by specialty
+// @Description  Returns employees with the requested specialty. Requires admin role.
+// @Tags         employees
+// @Produce      json
+// @Security     BearerAuth
+// @Param        specialty    path      string  true   "Veterinarian specialty"
+// @Param        page_number  query     int     false  "Page number"
+// @Param        page_size    query     int     false  "Page size"
+// @Success      200          {object}  http.APIResponse{data=[]dtos.EmployeeResponse}  "Employees"
+// @Failure      400          {object}  http.APIResponse  "Invalid specialty or pagination"
+// @Failure      401          {object}  http.APIResponse  "Unauthorized"
+// @Router       /employees/specialty/{specialty} [get]
 func (s *EmployeeHandler) GetEmployeesBySpecialty(c *gin.Context) {
 	var pageRequest page.PaginationRequest
 	if err := http.ShouldBindPageParams(&pageRequest, c, s.validator); err != nil {
@@ -102,6 +127,15 @@ func (s *EmployeeHandler) GetEmployeesBySpecialty(c *gin.Context) {
 	http.Paginated(c, &employeeResponses, "Employees")
 }
 
+// GetEmployeeStats godoc
+// @Summary      Get employee statistics
+// @Description  Returns aggregate employee statistics. Requires admin role.
+// @Tags         employees
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  http.APIResponse{data=dtos.EmployeeStatsResponse}  "Employee statistics"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Router       /employees/stats [get]
 func (s *EmployeeHandler) GetEmployeeStats(c *gin.Context) {
 	stats, err := s.service.GetEmployeeStats(c.Request.Context())
 	if err != nil {

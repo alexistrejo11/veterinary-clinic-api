@@ -37,34 +37,6 @@ type ErrorInfo struct {
 	Stack string `json:"stack,omitempty"` // Develop Only
 }
 
-// @Description Metadata for a generic list response.
-type Meta struct {
-	// The current page number.
-	Page int `json:"page,omitempty"`
-	// The number of items per page.
-	PageSize int `json:"page_size,omitempty"`
-	// The total number of items.
-	Total int `json:"total,omitempty"`
-	// The total number of pages.
-	TotalPages int `json:"total_pages,omitempty"`
-}
-
-// @Description Detailed pagination metadata.
-type PaginationMeta struct {
-	// The current page number.
-	CurrentPage int `json:"current_page"`
-	// The number of items per page.
-	PageSize int `json:"page_size"`
-	// The total number of items.
-	Total int `json:"total"`
-	// The total number of pages.
-	TotalPages int `json:"total_pages"`
-	// Indicates if there is a next page.
-	HasNext bool `json:"has_next"`
-	// Indicates if there is a previous page.
-	HasPrev bool `json:"has_prev"`
-}
-
 func (r *APIResponse) SuccessRequest(data any, message string) {
 	r.Success = true
 	r.Data = data
@@ -79,22 +51,6 @@ func (r *APIResponse) SuccessWithMeta(data any, meta any, message string) *APIRe
 	r.Meta = meta
 	r.Timestamp = time.Now()
 	return r
-}
-
-func (r *APIResponse) SuccessWithPagination(data any, pagination any) *APIResponse {
-	meta := &Meta{
-		Page:       pagination.(PaginationMeta).CurrentPage,
-		PageSize:   pagination.(PaginationMeta).PageSize,
-		Total:      pagination.(PaginationMeta).Total,
-		TotalPages: pagination.(PaginationMeta).TotalPages,
-	}
-
-	return &APIResponse{
-		Success:   true,
-		Data:      data,
-		Meta:      meta,
-		Timestamp: time.Now(),
-	}
 }
 
 func (r *APIResponse) ErrorRequest(err error) *APIResponse {

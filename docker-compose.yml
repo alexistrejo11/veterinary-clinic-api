@@ -1,23 +1,60 @@
 name: clinic-vet-api
 
+# Development stack. Run `docker compose up --build` to start the API with
+# PostgreSQL and Redis. Only the API is exposed to the host; the data services
+# are reachable by service name from the internal Docker network.
 services:
-  # The complete local application. DATABASE_URL and REDIS_URL deliberately
-  # target the services below instead of any cloud values in .env.
   api:
     container_name: clinic_vet_api
     build:
       context: .
       dockerfile: Dockerfile
     image: clinic-vet-api:latest
-    env_file:
-      - .env
     environment:
-      DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@postgres:5432/${DATABASE_NAME:-vet_database}?sslmode=disable
-      REDIS_URL: redis://:${REDIS_PASSWORD:-vetredis}@redis:6379/${REDIS_DB:-0}
+      SERVER_PORT: ${SERVER_PORT:?SERVER_PORT must be set}
+      SERVER_HOST: 0.0.0.0
+      ENVIRONMENT: development
+      SERVER_READ_TIMEOUT: 30s
+      SERVER_WRITE_TIMEOUT: 30s
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vet_database?sslmode=disable
+      DATABASE_MAX_OPEN_CONNS: 25
+      DATABASE_MAX_IDLE_CONNS: 5
+      DATABASE_CONN_MAX_LIFETIME: 1h
+      DATABASE_CONN_MAX_IDLE_TIME: 30m
+      REDIS_URL: redis://:vetredis@redis:6379/0
+      REDIS_KEY_PREFIX: vet-clinic-api
+      JWT_SECRET: development-only-jwt-secret-change-me-32-characters
+      TWO_FACTOR_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      JWT_EXPIRATION_TIME: 24h
+      REFRESH_TOKEN_EXPIRY: 168h
+      PASSWORD_MIN_LENGTH: 8
+      MAX_LOGIN_ATTEMPTS: 5
+      LOCKOUT_DURATION: 30m
+      TWILIO_ACCOUNT_SID: placeholder-twilio-account-sid
+      TWILIO_AUTH_TOKEN: placeholder-twilio-auth-token
+      TWILIO_FROM_PHONE: +10000000000
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: 587
+      SMTP_USERNAME: placeholder-smtp-username
+      SMTP_PASSWORD: placeholder-smtp-password
+      FROM_EMAIL: no-reply@example.com
+      FROM_NAME: Clinic Vet API
+      PROJECT_NAME: Clinic Vet API
+      APP_NAME: Clinic Vet API
+      APP_VERSION: 1.0.0
+      DEBUG: "true"
+      LOG_LEVEL: debug
+      ENABLE_SWAGGER: "true"
+      RATE_LIMIT_ENABLED: "false"
+      CORS_ALLOW_ORIGINS: "*"
+      CORS_ALLOW_METHODS: GET,POST,PUT,DELETE,OPTIONS
+      CORS_ALLOW_HEADERS: Origin,Content-Type,Authorization
+      CORS_ALLOW_CREDENTIALS: "true"
+      CORS_MAX_AGE: 12h
       SKIP_MIGRATIONS: "false"
       SKIP_DB_WAIT: "false"
     ports:
-      - "${SERVER_PORT:-8000}:${SERVER_PORT:-8000}"
+      - "${SERVER_PORT:?SERVER_PORT must be set}:${SERVER_PORT:?SERVER_PORT must be set}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,13 +69,15 @@ services:
     image: postgres:16-alpine
     container_name: clinic_vet_postgres
     environment:
-      POSTGRES_USER: ${DATABASE_USER:-postgres}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
-      POSTGRES_DB: ${DATABASE_NAME:-vet_database}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: vet_database
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5233:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_NAME:-vet_database}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vet_database"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -49,11 +88,13 @@ services:
   redis:
     image: redis:7-alpine
     container_name: clinic_vet_redis
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-vetredis}"]
+    command: ["redis-server", "--requirepass", "vetredis"]
     volumes:
       - redis_data:/data
+    ports:
+      - "6380:6379"
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-vetredis} ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli -a vetredis ping | grep -q PONG"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -62,10 +103,8 @@ services:
       - data_network
 
 networks:
-  # Lets the API communicate with external providers (SMTP, Twilio, etc.).
   app_network:
     driver: bridge
-  # Datastores have no host ports and are reachable only by the API.
   data_network:
     driver: bridge
     internal: true

@@ -89,8 +89,13 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+
       - name: Verify SQLC output
-        run: docker run --rm -v "$PWD:/src" -w /src sqlc/sqlc:1.31.1 generate -f database/sqlc.yaml && git diff --exit-code -- database/sqlc
+        run: |
+          "$(go env GOPATH)/bin/sqlc" generate -f database/sqlc.yaml
+          git diff --exit-code -- database/sqlc
 
       - name: Verify Swagger output
         run: go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal && git diff --exit-code -- docs

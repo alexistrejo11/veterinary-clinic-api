@@ -33,7 +33,5 @@ COPY scripts/parse-database-url.sh /scripts/parse-database-url.sh
 COPY scripts/parse-redis-url.sh /scripts/parse-redis-url.sh
 RUN chmod +x /entrypoint.sh
 
-EXPOSE ${PORT}
-
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["./main"]

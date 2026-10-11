@@ -22,14 +22,6 @@ type Address struct {
 	IsDefault           bool
 }
 
-func (a *Address) SetAsDefault() {
-	a.IsDefault = true
-}
-
-func (a *Address) SetAsNotDefault() {
-	a.IsDefault = false
-}
-
 type (
 	BuildingType string
 	Country      string

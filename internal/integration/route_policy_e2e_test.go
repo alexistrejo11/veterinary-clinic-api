@@ -18,6 +18,8 @@ var routeParameter = regexp.MustCompile(`:[^/]+`)
 func TestRegisteredRoutesRejectUnauthenticatedRequests(t *testing.T) {
 	env := testkit.NewEnvironment(t)
 	public := map[string]struct{}{
+		"GET /":                                    {},
+		"GET /home":                                {},
 		"GET /health":                              {},
 		"POST /api/v2/auth/register":               {},
 		"POST /api/v2/auth/login":                  {},

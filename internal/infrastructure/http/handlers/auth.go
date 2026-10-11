@@ -315,7 +315,17 @@ func (ctrl *AuthHandler) DisableTwoFactor(c *gin.Context) {
 	http.Success(c, nil, "Two factor disabled successfully")
 }
 
-// VerifyEmail POST /auth/verify-email — body: VerifyEmailRequest
+// VerifyEmail godoc
+// @Summary      Verify email address
+// @Description  Verifies an account email address with the code sent to that address.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body    body      dtos.VerifyEmailRequest  true  "Email and verification code"
+// @Success      200     {object}  http.APIResponse         "Email verified"
+// @Failure      400     {object}  http.APIResponse         "Invalid request"
+// @Failure      500     {object}  http.APIResponse         "Internal server error"
+// @Router       /auth/verify-email [post]
 func (ctrl *AuthHandler) VerifyEmail(c *gin.Context) {
 	var req dtos.VerifyEmailRequest
 	if err := http.ShouldBindAndValidateBody(c, &req, ctrl.validator); err != nil {
@@ -391,7 +401,19 @@ func (ctrl *AuthHandler) ResetPassword(c *gin.Context) {
 	http.Success(c, nil, "Password reset successfully")
 }
 
-// UpdatePassword POST /auth/update-password — body: UpdatePasswordRequest; requires auth
+// UpdatePassword godoc
+// @Summary      Update my password
+// @Description  Changes the authenticated user's password.
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body      dtos.UpdatePasswordRequest  true  "Current and new password"
+// @Success      200   {object}  http.APIResponse            "Password updated"
+// @Failure      400   {object}  http.APIResponse            "Validation error"
+// @Failure      401   {object}  http.APIResponse            "Unauthorized"
+// @Failure      500   {object}  http.APIResponse            "Internal server error"
+// @Router       /auth/password [put]
 func (ctrl *AuthHandler) UpdatePassword(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {
@@ -415,7 +437,16 @@ func (ctrl *AuthHandler) UpdatePassword(c *gin.Context) {
 	http.Success(c, nil, "Password updated successfully")
 }
 
-// DeleteMyAccount DELETE /auth/me or POST /auth/delete-account — requires auth; user from context
+// DeleteMyAccount godoc
+// @Summary      Delete my account
+// @Description  Soft-deletes the authenticated user's account.
+// @Tags         auth
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  http.APIResponse  "Account deleted"
+// @Failure      401  {object}  http.APIResponse  "Unauthorized"
+// @Failure      500  {object}  http.APIResponse  "Internal server error"
+// @Router       /auth/me [delete]
 func (ctrl *AuthHandler) DeleteMyAccount(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromContext(c)
 	if err != nil {

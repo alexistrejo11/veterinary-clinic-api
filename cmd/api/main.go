@@ -41,7 +41,6 @@ type Application struct {
 // @contact.email support@swagger.io
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-// @host localhost:8080
 // @BasePath /api/v2
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -158,7 +157,7 @@ func setupRouter(settings *config.AppSettings) *gin.Engine {
 		rateLimitConfig := middleware.RateLimiterConfig{
 			MaxRequests:    settings.RateLimit.RequestsPerSecond,
 			WindowDuration: settings.RateLimit.WindowDuration,
-			//BurstSize:         settings.RateLimit.BurstSize,
+			// BurstSize:         settings.RateLimit.BurstSize,
 		}
 		router.Use(middleware.RateLimiter(rateLimitConfig))
 	}
@@ -245,7 +244,6 @@ func (app *Application) waitForShutdown(ctx context.Context) {
 
 // cleanup handles cleanup of resources
 func (app *Application) cleanup() {
-
 	// Close Redis connection
 	if err := config.CloseRedis(); err != nil {
 		log.App.Error(fmt.Sprintf("Error closing Redis: %v", err))

@@ -250,6 +250,111 @@ func TestHealthAndProtectedProfileContract(t *testing.T) {
 	}
 }
 
+func TestAdminUserAndEmployeeLookupEndpoints(t *testing.T) {
+	env := testkit.NewEnvironment(t)
+	const adminID = 700
+	const employeeUserID = 701
+	if _, err := env.DB.Exec(t.Context(), `
+		INSERT INTO users (id, email, phone_number, role, status, name, oauth_provider, two_fa_method)
+		VALUES
+			($1, 'admin-lookup@example.com', '+525500000000', 'admin', 'active', 'Lookup Admin', 'local', 'none'),
+			($2, 'vet-lookup@example.com', '+525511111111', 'veterinarian', 'active', 'Lookup Vet', 'local', 'none')`, adminID, employeeUserID); err != nil {
+		t.Fatalf("create lookup users: %v", err)
+	}
+	if _, err := env.DB.Exec(t.Context(), `
+		INSERT INTO employees (first_name, last_name, gender, date_of_birth, photo, license_number, speciality, years_of_experience, is_active, user_id)
+		VALUES ('Lookup', 'Vet', 'female', '1980-01-01', 'https://example.com/vet.png', 'LOOKUP-701', 'general_practice', 10, true, $1)`, employeeUserID); err != nil {
+		t.Fatalf("create lookup employee: %v", err)
+	}
+	adminToken := testkit.AccessToken(t, adminID, "admin")
+
+	for _, endpoint := range []string{
+		"/api/v2/users/email/vet-lookup@example.com",
+		"/api/v2/users/phone?phone=%2B525511111111",
+		"/api/v2/employees/active",
+		"/api/v2/employees/specialty/general_practice",
+		"/api/v2/employees/stats",
+	} {
+		response := authenticatedRequest(t, env, http.MethodGet, endpoint, nil, adminToken)
+		if response.Code != http.StatusOK {
+			t.Fatalf("%s status = %d, want %d: %s", endpoint, response.Code, http.StatusOK, response.Body.String())
+		}
+	}
+
+	for _, expectedError := range []struct {
+		endpoint string
+		status   int
+	}{
+		{"/api/v2/users/email/not-an-email", http.StatusUnprocessableEntity},
+		{"/api/v2/users/email/missing@example.com", http.StatusNotFound},
+		{"/api/v2/users/phone", http.StatusBadRequest},
+		{"/api/v2/employees/specialty/not-a-specialty", http.StatusBadRequest},
+	} {
+		response := authenticatedRequest(t, env, http.MethodGet, expectedError.endpoint, nil, adminToken)
+		if response.Code != expectedError.status {
+			t.Fatalf("%s status = %d, want %d: %s", expectedError.endpoint, response.Code, expectedError.status, response.Body.String())
+		}
+	}
+}
+
+func TestAuthenticatedPasswordAndAccountEndpoints(t *testing.T) {
+	env := testkit.NewEnvironment(t)
+	response := request(t, env, http.MethodPost, "/api/v2/auth/register", map[string]any{
+		"role": "customer", "email": "account@example.com", "password": "SecurePass123!",
+		"first_name": "Account", "last_name": "Owner", "date_of_birth": "1990-01-02", "gender": "female",
+	})
+	if response.Code != http.StatusCreated {
+		t.Fatalf("register status = %d, want %d: %s", response.Code, http.StatusCreated, response.Body.String())
+	}
+	var userID uint
+	if err := env.DB.QueryRow(t.Context(), "SELECT id FROM users WHERE email = $1", "account@example.com").Scan(&userID); err != nil {
+		t.Fatalf("read account user: %v", err)
+	}
+	code := strings.TrimPrefix(env.Email.Sent[0].Message, "Use this verification code to activate your account: ")
+	response = request(t, env, http.MethodPost, "/api/v2/auth/activate", map[string]any{"user_id": strconv.FormatUint(uint64(userID), 10), "code": code})
+	if response.Code != http.StatusOK {
+		t.Fatalf("activate status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+	response = request(t, env, http.MethodPost, "/api/v2/auth/login", map[string]any{"email": "account@example.com", "password": "SecurePass123!"})
+	if response.Code != http.StatusOK {
+		t.Fatalf("login status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+	var login struct {
+		Data struct {
+			AccessToken struct {
+				Token string `json:"token"`
+			} `json:"access_token"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &login); err != nil {
+		t.Fatalf("decode login response: %v", err)
+	}
+
+	response = authenticatedRequest(t, env, http.MethodPut, "/api/v2/auth/password", map[string]any{
+		"current_password": "wrong-password", "new_password": "NewSecurePass123!",
+	}, login.Data.AccessToken.Token)
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("wrong current password status = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body.String())
+	}
+	response = authenticatedRequest(t, env, http.MethodPut, "/api/v2/auth/password", map[string]any{
+		"current_password": "SecurePass123!", "new_password": "NewSecurePass123!",
+	}, login.Data.AccessToken.Token)
+	if response.Code != http.StatusOK {
+		t.Fatalf("update password status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+	response = authenticatedRequest(t, env, http.MethodDelete, "/api/v2/auth/me", nil, login.Data.AccessToken.Token)
+	if response.Code != http.StatusOK {
+		t.Fatalf("delete account status = %d, want %d: %s", response.Code, http.StatusOK, response.Body.String())
+	}
+	var deletedAt *time.Time
+	if err := env.DB.QueryRow(t.Context(), "SELECT deleted_at FROM users WHERE id = $1", userID).Scan(&deletedAt); err != nil {
+		t.Fatalf("read deleted account: %v", err)
+	}
+	if deletedAt == nil {
+		t.Fatal("deleted account has no deleted_at timestamp")
+	}
+}
+
 func request(t *testing.T, env *testkit.Environment, method, path string, body any) *httptest.ResponseRecorder {
 	t.Helper()
 	var payload *bytes.Reader

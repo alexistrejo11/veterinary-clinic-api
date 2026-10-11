@@ -5,7 +5,7 @@ definitions:
       params or JSON body.
     properties:
       code:
-        maxLength: 32
+        maxLength: 64
         type: string
       user_id:
         maxLength: 20
@@ -780,6 +780,19 @@ definitions:
       specialty:
         type: string
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeStatsResponse:
+    description: Total employees, active count, and count per specialty.
+    properties:
+      active_employees:
+        type: integer
+      specialties:
+        additionalProperties:
+          format: int64
+          type: integer
+        type: object
+      total_employees:
+        type: integer
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeUpdateRequest:
     description: ID (required) plus optional fields and optional schedule.
     properties:
@@ -1283,7 +1296,7 @@ definitions:
     description: Email, code received by email, and new password.
     properties:
       code:
-        maxLength: 32
+        maxLength: 64
         type: string
       email:
         maxLength: 255
@@ -1350,6 +1363,20 @@ definitions:
         type: string
       type:
         type: string
+    type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePasswordRequest:
+    description: Current password and new password. Requires Bearer auth.
+    properties:
+      current_password:
+        maxLength: 128
+        type: string
+      new_password:
+        maxLength: 128
+        minLength: 8
+        type: string
+    required:
+    - current_password
+    - new_password
     type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePrescriptionRequest:
     description: Optional dosage, frequency, duration_days, route, instructions.
@@ -1566,6 +1593,19 @@ definitions:
         example: "2024-03-10T15:30:00Z"
         type: string
     type: object
+  clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyEmailRequest:
+    description: Email and verification code.
+    properties:
+      code:
+        maxLength: 32
+        type: string
+      email:
+        maxLength: 255
+        type: string
+    required:
+    - code
+    - email
+    type: object
   clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyTwoFactorRequest:
     description: One-time 2FA code (TOTP or backup code).
     properties:
@@ -1638,7 +1678,6 @@ definitions:
     x-enum-varnames:
     - ASC
     - DESC
-host: localhost:8080
 info:
   contact:
     email: support@swagger.io
@@ -2507,6 +2546,65 @@ paths:
       summary: Logout from all devices
       tags:
       - auth
+  /auth/me:
+    delete:
+      description: Soft-deletes the authenticated user's account.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Account deleted
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete my account
+      tags:
+      - auth
+  /auth/password:
+    put:
+      consumes:
+      - application/json
+      description: Changes the authenticated user's password.
+      parameters:
+      - description: Current and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password updated
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update my password
+      tags:
+      - auth
   /auth/refresh:
     post:
       consumes:
@@ -2643,6 +2741,36 @@ paths:
           schema:
             $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
       summary: Reset password
+      tags:
+      - auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      description: Verifies an account email address with the code sent to that address.
+      parameters:
+      - description: Email and verification code
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Email verified
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      summary: Verify email address
       tags:
       - auth
   /customers:
@@ -3207,6 +3335,45 @@ paths:
       summary: Restore employee
       tags:
       - employees
+  /employees/active:
+    get:
+      description: Returns active employees with pagination. Requires admin role.
+      parameters:
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Active employees
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid pagination
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List active employees
+      tags:
+      - employees
   /employees/appointments:
     get:
       consumes:
@@ -3515,6 +3682,75 @@ paths:
       summary: Reschedule my appointment (veterinarian)
       tags:
       - appointments
+  /employees/specialty/{specialty}:
+    get:
+      description: Returns employees with the requested specialty. Requires admin
+        role.
+      parameters:
+      - description: Veterinarian specialty
+        in: path
+        name: specialty
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page_number
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employees
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeResponse'
+                  type: array
+              type: object
+        "400":
+          description: Invalid specialty or pagination
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: List employees by specialty
+      tags:
+      - employees
+  /employees/stats:
+    get:
+      description: Returns aggregate employee statistics. Requires admin role.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Employee statistics
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.EmployeeStatsResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get employee statistics
+      tags:
+      - employees
   /me/addresses:
     get:
       responses:
@@ -6045,6 +6281,82 @@ paths:
       security:
       - BearerAuth: []
       summary: Update user status
+      tags:
+      - users
+  /users/email/{email}:
+    get:
+      description: Returns a user by email. Requires admin role.
+      parameters:
+      - description: User email
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User found
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "422":
+          description: Invalid email
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user by email
+      tags:
+      - users
+  /users/phone:
+    get:
+      description: Returns a user by phone number. Requires admin role.
+      parameters:
+      - description: User phone number
+        in: query
+        name: phone
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User found
+          schema:
+            allOf:
+            - $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/clinic-vet-api_internal_infrastructure_http_handlers_dtos.UserResponse'
+              type: object
+        "400":
+          description: Invalid or missing phone
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/clinic-vet-api_internal_shared_http.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user by phone
       tags:
       - users
 securityDefinitions:

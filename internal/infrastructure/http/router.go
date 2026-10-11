@@ -1,8 +1,9 @@
 package http
 
 import (
-	"clinic-vet-api/internal/infrastructure/http/handlers"
 	"errors"
+
+	"clinic-vet-api/internal/infrastructure/http/handlers"
 )
 
 type APIRouter struct {
@@ -72,6 +73,12 @@ func (a *AppHandlers) Validate() error {
 	if a.payment == nil {
 		return errors.New("payment handler is required")
 	}
+	if a.medical == nil {
+		return errors.New("medical handler is required")
+	}
+	if a.notification == nil {
+		return errors.New("notification handler is required")
+	}
 	if a.home == nil {
 		return errors.New("home handler is required")
 	}
@@ -115,7 +122,6 @@ func (r *APIRouter) RegisterRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) authRoutes() {
-
 	publicAuthRoutes := r.config.Router.Group("/api/v2/auth")
 	{
 		publicAuthRoutes.POST("/register", r.appHandlers.auth.Register)
@@ -133,6 +139,8 @@ func (r *APIRouter) authRoutes() {
 	{
 		authenticatedAuthRoutes.POST("/logout", r.appHandlers.auth.Logout)
 		authenticatedAuthRoutes.POST("/logout-all", r.appHandlers.auth.LogoutAll)
+		authenticatedAuthRoutes.PUT("/password", r.appHandlers.auth.UpdatePassword)
+		authenticatedAuthRoutes.DELETE("/me", r.appHandlers.auth.DeleteMyAccount)
 	}
 
 	twoFactorAuthRoutes := r.config.Router.Group("/api/v2/auth/2fa")
@@ -141,7 +149,6 @@ func (r *APIRouter) authRoutes() {
 		twoFactorAuthRoutes.POST("/enable", r.appHandlers.auth.EnableTwoFactor)
 		twoFactorAuthRoutes.POST("/disable", r.appHandlers.auth.DisableTwoFactor)
 	}
-
 }
 
 // ------------------------------------------------------------
@@ -167,6 +174,8 @@ func (r *APIRouter) userRoutes() {
 	userRoutes.Use(r.config.AuthMiddleware.RequireAnyRole("admin"))
 	{
 		userRoutes.GET("/", r.appHandlers.user.SearchUsers)
+		userRoutes.GET("/email/:email", r.appHandlers.user.GetUserByEmail)
+		userRoutes.GET("/phone", r.appHandlers.user.GetUserByPhone)
 		userRoutes.GET("/:id", r.appHandlers.user.GetUserByID)
 		userRoutes.POST("/", r.appHandlers.user.CreateUser)
 		userRoutes.POST("/:id/restore", r.appHandlers.user.RestoreUser)
@@ -275,6 +284,9 @@ func (r *APIRouter) employeeRoutes() {
 	employeeRoutes.Use(r.config.AuthMiddleware.RequireAnyRole("admin"))
 	{
 		employeeRoutes.GET("/", r.appHandlers.employee.SearchEmployees)
+		employeeRoutes.GET("/active", r.appHandlers.employee.GetActiveEmployees)
+		employeeRoutes.GET("/specialty/:specialty", r.appHandlers.employee.GetEmployeesBySpecialty)
+		employeeRoutes.GET("/stats", r.appHandlers.employee.GetEmployeeStats)
 		employeeRoutes.GET("/:id", r.appHandlers.employee.GetEmployeeByID)
 		employeeRoutes.POST("/", r.appHandlers.employee.CreateEmployee)
 		employeeRoutes.PUT("/:id", r.appHandlers.employee.UpdateEmployee)
@@ -376,9 +388,6 @@ func (r *APIRouter) paymentRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) medicalRoutes() {
-	if r.appHandlers.medical == nil {
-		return
-	}
 	m := r.appHandlers.medical
 
 	// Customer: read-only (my sessions, my pets’ data)
@@ -467,9 +476,6 @@ func (r *APIRouter) medicalRoutes() {
 // ------------------------------------------------------------
 
 func (r *APIRouter) notificationRoutes() {
-	if r.appHandlers.notification == nil {
-		return
-	}
 	n := r.appHandlers.notification
 
 	// Customer: read-only (my notifications)
@@ -500,5 +506,7 @@ func (r *APIRouter) notificationRoutes() {
 
 func (r *APIRouter) homeRoutes() {
 	homeRoutes := r.config.Router.Group("")
+	homeRoutes.GET("/", r.appHandlers.home.Home)
+	homeRoutes.GET("/home", r.appHandlers.home.Home)
 	homeRoutes.GET("/health", r.appHandlers.home.HealthCheck)
 }

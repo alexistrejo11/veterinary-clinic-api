@@ -1,15 +1,12 @@
 package employees
 
-import (
-	"slices"
-	"strings"
-)
+import "strings"
 
 // VetSpecialty represents the specialty of a veterinarian
 type VetSpecialty string
 
 const (
-	VetSpecialtyUnknown               VetSpecialty = "unknown"
+	VetSpecialtyUnknown               VetSpecialty = "unknown_specialty"
 	VetSpecialtyGeneralPractice       VetSpecialty = "general_practice"
 	VetSpecialtySurgery               VetSpecialty = "surgery"
 	VetSpecialtyInternalMedicine      VetSpecialty = "internal_medicine"
@@ -154,32 +151,6 @@ var (
 		VetSpecialtyRehabilitation:        "Rehabilitation",
 		VetSpecialtyNutrition:             "Nutrition",
 	}
-
-	vetSpecialtyCategories = map[VetSpecialty]string{
-		VetSpecialtyGeneralPractice:       "general",
-		VetSpecialtySurgery:               "surgical",
-		VetSpecialtyInternalMedicine:      "medical",
-		VetSpecialtyDentistry:             "surgical",
-		VetSpecialtyDermatology:           "medical",
-		VetSpecialtyOncology:              "medical",
-		VetSpecialtyCardiology:            "medical",
-		VetSpecialtyNeurology:             "medical",
-		VetSpecialtyOphthalmology:         "medical",
-		VetSpecialtyRadiology:             "diagnostic",
-		VetSpecialtyEmergencyCriticalCare: "emergency",
-		VetSpecialtyAnesthesiology:        "surgical",
-		VetSpecialtyPathology:             "diagnostic",
-		VetSpecialtyPreventiveMedicine:    "preventive",
-		VetSpecialtyExoticAnimalMedicine:  "specialty",
-		VetSpecialtyEquineMedicine:        "large_animal",
-		VetSpecialtyAvianMedicine:         "specialty",
-		VetSpecialtyZooAnimalMedicine:     "specialty",
-		VetSpecialtyFoodAnimalMedicine:    "large_animal",
-		VetSpecialtyPublicHealth:          "public_health",
-		VetSpecialtyBehavior:              "behavioral",
-		VetSpecialtyRehabilitation:        "therapeutic",
-		VetSpecialtyNutrition:             "nutritional",
-	}
 )
 
 func (vs VetSpecialty) IsValid() bool {
@@ -220,106 +191,4 @@ func (vs VetSpecialty) DisplayName() string {
 
 func (vs VetSpecialty) Values() []VetSpecialty {
 	return ValidVetSpecialties
-}
-
-func (vs VetSpecialty) Category() string {
-	if category, exists := vetSpecialtyCategories[vs]; exists {
-		return category
-	}
-	return "general"
-}
-
-func (vs VetSpecialty) IsSurgical() bool {
-	surgicalSpecialties := []VetSpecialty{
-		VetSpecialtySurgery,
-		VetSpecialtyDentistry,
-		VetSpecialtyAnesthesiology,
-	}
-	return slices.Contains(surgicalSpecialties, vs)
-}
-
-func (vs VetSpecialty) IsMedical() bool {
-	medicalSpecialties := []VetSpecialty{
-		VetSpecialtyInternalMedicine,
-		VetSpecialtyDermatology,
-		VetSpecialtyOncology,
-		VetSpecialtyCardiology,
-		VetSpecialtyNeurology,
-		VetSpecialtyOphthalmology,
-	}
-	return slices.Contains(medicalSpecialties, vs)
-}
-
-func (vs VetSpecialty) IsDiagnostic() bool {
-	diagnosticSpecialties := []VetSpecialty{
-		VetSpecialtyRadiology,
-		VetSpecialtyPathology,
-	}
-	return slices.Contains(diagnosticSpecialties, vs)
-}
-
-func (vs VetSpecialty) IsLargeAnimal() bool {
-	largeAnimalSpecialties := []VetSpecialty{
-		VetSpecialtyEquineMedicine,
-		VetSpecialtyFoodAnimalMedicine,
-	}
-	return slices.Contains(largeAnimalSpecialties, vs)
-}
-
-func (vs VetSpecialty) IsExoticAnimal() bool {
-	exoticSpecialties := []VetSpecialty{
-		VetSpecialtyExoticAnimalMedicine,
-		VetSpecialtyAvianMedicine,
-		VetSpecialtyZooAnimalMedicine,
-	}
-	return slices.Contains(exoticSpecialties, vs)
-}
-
-func (vs VetSpecialty) RequiresSpecialEquipment() bool {
-	return vs.IsSurgical() || vs.IsDiagnostic() || vs == VetSpecialtyDentistry
-}
-
-func GetAllVetSpecialties() []VetSpecialty {
-	return ValidVetSpecialties
-}
-
-func GetSurgicalSpecialties() []VetSpecialty {
-	return []VetSpecialty{
-		VetSpecialtySurgery,
-		VetSpecialtyDentistry,
-		VetSpecialtyAnesthesiology,
-	}
-}
-
-func GetMedicalSpecialties() []VetSpecialty {
-	return []VetSpecialty{
-		VetSpecialtyInternalMedicine,
-		VetSpecialtyDermatology,
-		VetSpecialtyOncology,
-		VetSpecialtyCardiology,
-		VetSpecialtyNeurology,
-		VetSpecialtyOphthalmology,
-	}
-}
-
-func GetDiagnosticSpecialties() []VetSpecialty {
-	return []VetSpecialty{
-		VetSpecialtyRadiology,
-		VetSpecialtyPathology,
-	}
-}
-
-func GetLargeAnimalSpecialties() []VetSpecialty {
-	return []VetSpecialty{
-		VetSpecialtyEquineMedicine,
-		VetSpecialtyFoodAnimalMedicine,
-	}
-}
-
-func GetExoticAnimalSpecialties() []VetSpecialty {
-	return []VetSpecialty{
-		VetSpecialtyExoticAnimalMedicine,
-		VetSpecialtyAvianMedicine,
-		VetSpecialtyZooAnimalMedicine,
-	}
 }

@@ -46,7 +46,6 @@ type AddressService interface {
 	GetAddressByIDAndUserID(ctx context.Context, id AddressID, userID *shared.UserID) (Address, error)
 	GetAddressesByUserID(ctx context.Context, userID shared.UserID) ([]Address, error)
 	GetAddressesBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error)
-	GetAddressesByIDAndUserID(ctx context.Context, id AddressID, userID shared.UserID) (Address, error)
 }
 
 type addressService struct {
@@ -197,8 +196,4 @@ func (s *addressService) GetAddressesByUserID(ctx context.Context, userID shared
 
 func (s *addressService) GetAddressesBySpecification(ctx context.Context, spec AddressSpecification) (page.Page[Address], error) {
 	return s.repository.GetBySpecification(ctx, spec)
-}
-
-func (s *addressService) GetAddressesByIDAndUserID(ctx context.Context, id AddressID, userID shared.UserID) (Address, error) {
-	return s.repository.GetByIDAndUserID(ctx, id, userID)
 }

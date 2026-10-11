@@ -41,8 +41,8 @@ Production data plane targets **Amazon RDS (PostgreSQL)** and **Upstash Redis**;
 | **Version** | 2.0.0 |
 | **Status** | stable |
 | **Primary API prefix** | `/api/v2` (most routes) |
-| **Health check** | [GET /health](https://api.vet-clinic.example.com/health) (local: http://localhost:8000/health) |
-| **OpenAPI (Swagger)** | http://localhost:8000/swagger/index.html when `ENABLE_SWAGGER=true` and not production |
+| **Health check** | [GET /health](https://api.vet-clinic.example.com/health) (local: `http://localhost:${SERVER_PORT}/health`) |
+| **OpenAPI (Swagger)** | `http://localhost:${SERVER_PORT}/swagger/index.html` when `ENABLE_SWAGGER=true` and not production |
 
 ---
 
@@ -126,24 +126,35 @@ cp .env-example .env
 # Docker Compose supplies local PostgreSQL and Redis URLs automatically.
 ```
 
-### 2. Local full stack (Postgres + Redis + API)
+### 2. Development stack with Docker Compose
 
-From the repository root:
+The repository Compose file is intentionally a development environment. It is
+self-contained and starts the API, PostgreSQL, and Redis together. Database
+credentials and service URLs are defined inside Compose and point to the
+Docker service names (`postgres` and `redis`), while external integrations use
+development placeholders. PostgreSQL is available on host port `5233` and
+Redis on host port `6380` to avoid the usual local ports.
+
+From the repository root, run:
 
 ```bash
 docker compose up --build
-docker compose up --build -d
 ```
+
+Use `docker compose up --build -d` to run it in the background. The only
+published port is controlled by the required `SERVER_PORT` environment variable.
 
 | Service | URL |
 |---------|-----|
-| API | http://localhost:8000 |
-| Health | http://localhost:8000/health |
-| Swagger | http://localhost:8000/swagger/index.html (dev) |
-| Postgres | Available only to the API on the Compose network |
-| Redis | Available only to the API on the Compose network |
+| API | `http://localhost:${SERVER_PORT}` |
+| Health | `http://localhost:${SERVER_PORT}/health` |
+| Swagger | `http://localhost:${SERVER_PORT}/swagger/index.html` (dev) |
+| Postgres | localhost:5233 -> container 5432 |
+| Redis | localhost:6380 -> container 6379 |
 
-Migrations run on API startup unless `SKIP_MIGRATIONS=true`.
+Migrations run automatically on API startup. Stop the stack with
+`docker compose down`; add `-v` when you also want to remove the development
+database and Redis data.
 
 ### 3. Run on the host (without Docker)
 
@@ -156,7 +167,10 @@ go run ./cmd/api
 
 ## Configuration
 
-Copy [.env-example](.env-example) to `.env`. Never commit `.env`.
+Copy [.env-example](.env-example) to `.env` when running the API directly on
+the host. Docker Compose does not load `.env` as a service environment file;
+its development values are intentionally defined in `docker-compose.yml`.
+Never commit `.env`.
 
 | Variable | Description |
 |----------|-------------|
@@ -165,7 +179,7 @@ Copy [.env-example](.env-example) to `.env`. Never commit `.env`.
 | `REDIS_URL` | Redis URL (`redis://` or `rediss://` for TLS) |
 | `JWT_SECRET` | Signing key (minimum 32 characters) |
 | `JWT_EXPIRATION_TIME` / `REFRESH_TOKEN_EXPIRY` | Token lifetimes |
-| `SERVER_PORT` / `SERVER_HOST` | HTTP bind (default `8000` / `0.0.0.0`) |
+| `SERVER_PORT` / `SERVER_HOST` | HTTP bind (`SERVER_PORT` required / `0.0.0.0`) |
 | `ENVIRONMENT` | `development` or `production` |
 | `ENABLE_SWAGGER` | Swagger UI (disabled in production by default) |
 | `CORS_ALLOW_ORIGINS` | Allowed frontend origins |
@@ -178,7 +192,7 @@ RDS hosts (`*.rds.amazonaws.com`) get `sslmode=require` automatically when parsi
 
 ## API overview
 
-Base URL (local): `http://localhost:8000`  
+Base URL (local): `http://localhost:${SERVER_PORT}`
 Base URL (production placeholder): `https://api.vet-clinic.example.com`
 
 Authentication: `Authorization: Bearer <access_token>` on protected routes.

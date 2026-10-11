@@ -4,7 +4,6 @@ import (
 	"clinic-vet-api/internal/shared/errors"
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 )
 
@@ -104,18 +103,6 @@ func (vr VisitReason) DisplayName() string {
 
 func (vr VisitReason) Values() []VisitReason {
 	return ValidVisitReasons
-}
-
-func (vr VisitReason) IsRoutine() bool {
-	return vr == VisitReasonRoutineCheckup ||
-		vr == VisitReasonVaccination ||
-		vr == VisitReasonGrooming
-}
-
-func (vr VisitReason) IsUrgent() bool {
-	return vr == VisitReasonEmergency ||
-		vr == VisitReasonInjury ||
-		vr == VisitReasonIllness
 }
 
 // VisitType represents the type of veterinary visit
@@ -234,14 +221,6 @@ func (vt VisitType) DefaultDuration() int {
 	return 30 // default duration in minutes
 }
 
-func (vt VisitType) RequiresMedicalStaff() bool {
-	return vt != VisitTypeGrooming
-}
-
-func (vt VisitType) IsSurgical() bool {
-	return vt == VisitTypeSurgery || vt == VisitTypeDental
-}
-
 // PetCondition represents the condition of a pet during a visit
 type PetCondition string
 
@@ -282,15 +261,6 @@ var (
 		PetConditionSerious:  "Serious",
 		PetConditionGuarded:  "Guarded",
 	}
-
-	petConditionSeverity = map[PetCondition]int{
-		PetConditionGood:     1,
-		PetConditionStable:   2,
-		PetConditionFair:     3,
-		PetConditionGuarded:  4,
-		PetConditionSerious:  5,
-		PetConditionCritical: 6,
-	}
 )
 
 func (pc PetCondition) IsValid() bool {
@@ -327,25 +297,6 @@ func (pc PetCondition) DisplayName() string {
 
 func (pc PetCondition) Values() []PetCondition {
 	return ValidPetConditions
-}
-
-func (pc PetCondition) Severity() int {
-	if severity, exists := petConditionSeverity[pc]; exists {
-		return severity
-	}
-	return 0
-}
-
-func (pc PetCondition) IsCritical() bool {
-	return pc == PetConditionCritical || pc == PetConditionSerious
-}
-
-func (pc PetCondition) IsStable() bool {
-	return pc == PetConditionStable || pc == PetConditionGood || pc == PetConditionFair
-}
-
-func (pc PetCondition) RequiresImmediateAttention() bool {
-	return pc.Severity() >= 4 // Guarded, Serious, Critical
 }
 
 // Utility functions
@@ -474,20 +425,6 @@ func (as AppointmentStatus) CanBeCancelled() bool {
 	return as == AppointmentStatusPending || as == AppointmentStatusConfirmed
 }
 
-// IsFinalStatus checks if the status is a final state (no further changes expected)
-func (as AppointmentStatus) IsFinalStatus() bool {
-	return as == AppointmentStatusCompleted ||
-		as == AppointmentStatusCancelled ||
-		as == AppointmentStatusNotPresented
-}
-
-// CanBeRescheduled checks if an appointment can be rescheduled from current status
-func (as AppointmentStatus) CanBeRescheduled() bool {
-	return as == AppointmentStatusPending ||
-		as == AppointmentStatusConfirmed ||
-		as == AppointmentStatusRescheduled
-}
-
 // ClinicService represents the types of services offered by the clinic
 type ClinicService string
 
@@ -612,25 +549,6 @@ func (cs ClinicService) DefaultDuration() int {
 		return duration
 	}
 	return 30 // default duration in minutes
-}
-
-func (cs ClinicService) IsMedicalService() bool {
-	medicalServices := []ClinicService{
-		ClinicServiceGeneralConsultation,
-		ClinicServiceVaccination,
-		ClinicServiceSurgery,
-		ClinicServiceDentalCare,
-		ClinicServiceEmergencyCare,
-		ClinicServiceNutritionConsult,
-		ClinicServiceBehaviorConsult,
-		ClinicServiceWellnessExam,
-	}
-
-	return slices.Contains(medicalServices, cs)
-}
-
-func (cs ClinicService) IsGroomingService() bool {
-	return cs == ClinicServiceGrooming
 }
 
 func normalizeServiceInput(input string) string {

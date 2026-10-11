@@ -91,7 +91,7 @@ type ResetPasswordRequest struct {
 	Password string `json:"password" binding:"required,min=8,max=128"`
 }
 
-// UpdatePasswordRequest is the body for POST /auth/update-password
+// UpdatePasswordRequest is the body for PUT /auth/password
 // @Description Current password and new password. Requires Bearer auth.
 type UpdatePasswordRequest struct {
 	CurrentPassword string `json:"current_password" binding:"required,max=128"`

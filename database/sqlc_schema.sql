@@ -6,7 +6,7 @@ CREATE TYPE veterinarian_speciality AS ENUM (
     'dermatology', 'oncology', 'cardiology', 'neurology', 'ophthalmology', 'radiology',
     'emergency_critical_care', 'anesthesiology', 'pathology', 'preventive_medicine',
     'exotic_animal_medicine', 'equine_medicine', 'avian_medicine', 'zoo_animal_medicine',
-    'food_animal_medicine', 'public_health'
+    'food_animal_medicine', 'public_health', 'behavior', 'rehabilitation', 'nutrition'
 );
 CREATE TYPE currency AS ENUM ('USD', 'MXN', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'SEK', 'NZD');
 CREATE TYPE payment_status AS ENUM ('pending', 'completed', 'failed', 'refunded');

@@ -271,6 +271,9 @@ const (
 	VeterinarianSpecialityZooAnimalMedicine     VeterinarianSpeciality = "zoo_animal_medicine"
 	VeterinarianSpecialityFoodAnimalMedicine    VeterinarianSpeciality = "food_animal_medicine"
 	VeterinarianSpecialityPublicHealth          VeterinarianSpeciality = "public_health"
+	VeterinarianSpecialityBehavior              VeterinarianSpeciality = "behavior"
+	VeterinarianSpecialityRehabilitation        VeterinarianSpeciality = "rehabilitation"
+	VeterinarianSpecialityNutrition             VeterinarianSpeciality = "nutrition"
 )
 
 func (e *VeterinarianSpeciality) Scan(src interface{}) error {

@@ -216,30 +216,10 @@ func (a *Appointment) canTransitionTo(newStatus AppointmentStatus) bool {
 	return slices.Contains(allowedTransitions, newStatus)
 }
 
-func (a *Appointment) IsUpcoming() bool {
-	now := time.Now()
-	return a.Status == AppointmentStatusConfirmed &&
-		a.ScheduledDate.After(now) &&
-		a.ScheduledDate.Before(now.Add(24*time.Hour))
-}
-
 func (a *Appointment) IsActive() bool {
 	now := time.Now()
 	return (a.Status == AppointmentStatusConfirmed || a.Status == AppointmentStatusRescheduled) &&
 		a.ScheduledDate.After(now)
-}
-
-func (a *Appointment) RequiresReminder() bool {
-	now := time.Now()
-	reminderTime := a.ScheduledDate.Add(-24 * time.Hour)
-	return a.Status == AppointmentStatusConfirmed &&
-		now.After(reminderTime) &&
-		a.ScheduledDate.After(now)
-}
-
-func (a *Appointment) CanBeReviewed() bool {
-	return a.Status == AppointmentStatusCompleted &&
-		a.ScheduledDate.After(time.Now().Add(-30*24*time.Hour)) // Within 30 days
 }
 
 func (a *Appointment) CanBeDeleted(ctx context.Context) error {

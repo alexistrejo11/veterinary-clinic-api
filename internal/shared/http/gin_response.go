@@ -31,26 +31,11 @@ func Paginated[T any](ctx *gin.Context, pag *page.Page[T], entity string) {
 	ctx.JSON(200, response)
 }
 
-func SuccessWithMeta(ctx *gin.Context, data any, message string, meta any) {
-	response := APIResponse{}
-	response.SuccessWithMeta(data, meta, message)
-
-	ctx.JSON(200, response)
-}
-
 func SuccessCreated(ctx *gin.Context, data any, message string) {
 	response := APIResponse{}
 	response.SuccessRequest(data, message)
 
 	ctx.JSON(201, response)
-}
-
-func SuccessWithPagination(ctx *gin.Context, data any, message string, pagination any) {
-	response := APIResponse{}
-	paginationMetadata := gin.H{"pagination": pagination}
-	response.SuccessWithMeta(data, paginationMetadata, message)
-
-	ctx.JSON(200, response)
 }
 
 func Found(ctx *gin.Context, data any, entityName string) {
@@ -81,23 +66,10 @@ func Updated(ctx *gin.Context, data any, entityName string) {
 	ctx.JSON(200, response)
 }
 
-func NoContent(ctx *gin.Context) {
-	response := APIResponse{}
-	response.SuccessRequest(nil, "No content")
-	ctx.JSON(204, response)
-}
-
 func NotFound(ctx *gin.Context, err error) {
 	response := APIResponse{}
 	errorResponse := response.ErrorRequest(err)
 	ctx.JSON(404, errorResponse)
-}
-
-func Conflict(ctx *gin.Context, err error) {
-	response := APIResponse{}
-	errorResponse := response.ErrorRequest(err)
-
-	ctx.JSON(409, errorResponse)
 }
 
 func BadRequest(ctx *gin.Context, err error) {
@@ -119,12 +91,6 @@ func Forbidden(ctx *gin.Context, err error) {
 	errorResponse := response.ErrorRequest(err)
 
 	ctx.JSON(403, errorResponse)
-}
-
-func ServerError(ctx *gin.Context, err error) {
-	response := APIResponse{}
-	errorResponse := response.ErrorRequest(err)
-	ctx.JSON(500, errorResponse)
 }
 
 func ApplicationError(ctx *gin.Context, err error) {

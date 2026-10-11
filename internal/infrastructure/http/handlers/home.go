@@ -18,6 +18,15 @@ type HomeHandler struct {
 	router *gin.Engine
 }
 
+func (h *HomeHandler) Home(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"service": "clinic-vet-api",
+		"status":  "ok",
+		"message": "Veterinary clinic API is running",
+		"version": getEnvWithDefault("APP_VERSION", "2.0.0"),
+	})
+}
+
 func (h *HomeHandler) HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status":    "ok",
